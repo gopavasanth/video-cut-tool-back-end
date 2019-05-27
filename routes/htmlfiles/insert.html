@@ -1,0 +1,22 @@
+<html>
+  <title> Hello </title>
+  <body>
+    <h1>Test</h1>
+    <form action="/send" method="POST">
+      FromTime: <input type="text" name="from_time"><br>
+      ToTime: <input type="text" name="to_time"><br>
+      inLocation: <input type="text" name="in_location"><br>
+      out_location: <input type="text" name="out_location"><br>
+      Submit <input type="submit" value="Submit">
+    </form>
+    <form action="/download" method="POST">
+      VideoURL: <input type="text" name="url"><br>
+      Submit <input type="submit" value="Submit">
+    </form>
+
+    <video width="400" controls>
+      <source src="https://upload.wikimedia.org/wikipedia/commons/e/ee/Theodore_Roosevelt%27s_arrival_in_Africa.webm" type="video/mp4">
+    </video>
+
+  </body>
+</html>
