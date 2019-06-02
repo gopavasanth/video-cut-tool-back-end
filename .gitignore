@@ -24,3 +24,6 @@ yarn-error.log*
 
 #config.js
 routes/config.js
+
+#videos
+routes/videos/

@@ -23,11 +23,11 @@ router.get('/', function(req, res, next) {
 
 /* Trims the Video using ffmpeg */
 function trim(req, res) {
-
+ const id = e.target.id;
  const index = id.match(/\d+/g).map(Number)[0];
 
  console.log("From"+req.body.trims[index].from);
- console.log("From"+req.body.trims[index].to);
+ console.log("to"+req.body.trims[index].to);
 
  var hash_name = 'video'+trim.counter++;
 
@@ -35,10 +35,11 @@ function trim(req, res) {
  var out_location = Path.resolve(__dirname, 'cropped', hash_name + '_trimmed.mp4')
 
  shell.echo(" " + trims[index].from + " " + trims[index].to + " " + in_location + " " + out_location);
- var count=index;
- while( count !=0 ) {
+ var count = index;
+ while( count != 0 ) {
    var cmd = 'ffmpeg -i ' + in_location + ' -ss ' + req.body.trims[index].from + ' -t ' + req.body.trims[index].from + ' -async 1 ' + out_location;
    index++;
+   count--;
  }
  // var cmd = 'ffmpeg -i ' + in_location + ' -ss ' + from_time + ' -t ' + to_time + ' -async 1 ' + out_location;
  console.log("Command" + cmd);
