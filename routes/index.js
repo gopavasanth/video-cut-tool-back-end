@@ -7,12 +7,8 @@ const Path = require('path')
 const Listr = require('listr')
 const Axios = require('axios')
 const shell = require('shelljs');
+const { exec } = require('child_process');
 var hash_name = 'video'
-
-if( typeof trim.counter == 'undefined' && typeof tasks.counter == 'undefined' ){
-    trim.counter = 0;
-    tasks.counter = 0;
-}
 
 /* GET home page. */
 router.get('/', function(req, res, next) {
@@ -21,75 +17,64 @@ router.get('/', function(req, res, next) {
  });
 });
 
-/* Trims the Video using ffmpeg */
-function trim(req, res) {
- const id = e.target.id;
- const index = id.match(/\d+/g).map(Number)[0];
+function downloadVideo(url, callback) {
+  const videoExtension = url.split('.').pop().toLowerCase();
+  const videoPath = Path.resolve(__dirname, 'videos', `video_${Date.now()}_${parseInt(Math.random() * 10000)}.${videoExtension}`);
+  const writer = Fs.createWriteStream(videoPath)
+  exec(`ffmpeg -y -i ${url} -vcodec copy -acodec copy ${videoPath}`, (err) => {
+    if (err) return callback(err);
+    return callback(null, videoPath);
+  })
+}
 
- console.log("From"+req.body.trims[index].from);
- console.log("to"+req.body.trims[index].to);
+function trimVideos(trims, videoPath, callback) {
+  const videoExtension = videoPath.split('.').pop().toLowerCase();
+  const trimsLocations = [];
 
- var hash_name = 'video'+trim.counter++;
+  trims.forEach((element, index) => {
+    var hash_name = 'video' + index + Date.now() + '.' + videoExtension;
+    console.log(element, index)
+    var out_location = Path.resolve(__dirname, 'cropped', hash_name + '_trimmed.webm')
+    trimsLocations.push(out_location);
+    var cmd = 'ffmpeg -i ' + videoPath + ' -ss ' + element.from + ' -to ' + element.to + ' -async 1 -strict 2 ' + out_location;
+    console.log("Command" + cmd);
 
- var in_location = Path.resolve(__dirname, 'videos', hash_name + '.mp4')
- var out_location = Path.resolve(__dirname, 'cropped', hash_name + '_trimmed.mp4')
-
- shell.echo(" " + trims[index].from + " " + trims[index].to + " " + in_location + " " + out_location);
- var count = index;
- while( count != 0 ) {
-   var cmd = 'ffmpeg -i ' + in_location + ' -ss ' + req.body.trims[index].from + ' -t ' + req.body.trims[index].from + ' -async 1 ' + out_location;
-   index++;
-   count--;
- }
- // var cmd = 'ffmpeg -i ' + in_location + ' -ss ' + from_time + ' -t ' + to_time + ' -async 1 ' + out_location;
- console.log("Command" + cmd);
-
- if (shell.exec(cmd, (error, stdout, stderr) => {
-   console.log(stdout);
-   console.info("Program Started");
-   console.log(stderr);
-   if (error !== null) {
-    console.log(`Trimming Successuful !`);
+   if (shell.exec(cmd, (error, stdout, stderr) => {
+     console.log(stdout);
+     console.info("Program Started");
+     console.log(stderr);
+     if (error !== null) {
+       console.log(error)
+       console.log(`Trimming Successuful !`);
+     }
+     }).code !== 0) {
+     shell.echo("Error");
    }
-  }).code !== 0) {
-  shell.echo("Error");
- }
- res.render('index', {
-  message: "success"
- });
-}
+  });
 
-/* Downloads the video. */
-async function tasks(req) {
- const url = req.body.inputVideoUrl
- var hash_name = 'video'+tasks.counter++;
- const path = Path.resolve(__dirname, 'videos', hash_name + '.mp4')
- const writer = Fs.createWriteStream(path)
-
- const response = await Axios({
-  url,
-  method: 'GET',
-  responseType: 'stream'
- })
-
- response.data.pipe(writer)
- console.log("downloaded")
- return new Promise((resolve, reject) => {
-  writer.on('finish', resolve)
-  writer.on('error', reject)
- })
-}
-
-/* Main function to start tasks(downloading the video and trimming the video)*/
-async function start(req) {
- await tasks(req);
- trim(req);
+  return callback(null, trimsLocations);
 }
 
 router.post('/send', function(req, res, next) {
  console.log('Hit Send')
+ const url = req.body.inputVideoUrl;
 
- start(req);
+ downloadVideo(url, (err, videoPath) => {
+   if (err || !videoPath || !Fs.existsSync(videoPath)) {
+     return res.status(400).send('Error downloading video');
+   } else {
+     res.render('index', {
+       message: "successfully video downloaded"
+     });
+   }
+   console.log("video-downloaded successfully")
+   trimVideos(req.body.trims, videoPath, (err, trimmedVideos) => {
+    res.render('index', {
+      message: "Trimming success"
+    });
+   })
+ })
+//  start(req, res);
 
 });
 
