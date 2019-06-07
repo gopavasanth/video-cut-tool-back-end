@@ -18,28 +18,36 @@ router.get('/', function(req, res, next) {
 });
 
 function downloadVideo(url, callback) {
-  const videoExtension = url.split('.').pop().toLowerCase();
-  const videoPath = Path.resolve(__dirname, 'videos', `video_${Date.now()}_${parseInt(Math.random() * 10000)}.${videoExtension}`);
-  const writer = Fs.createWriteStream(videoPath)
-  exec(`ffmpeg -y -i ${url} -vcodec copy -acodec copy ${videoPath}`, (err) => {
-    if (err) return callback(err);
-    return callback(null, videoPath);
+  let videoExtension = url.split('.').pop().toLowerCase();
+  console.log("=== videoExtension === "+ videoExtension)
+  console.log(__dirname + "/videos/");
+  var videoPath = Path.join(__dirname, '/videos/', `video_${Date.now()}_${parseInt(Math.random() * 10000)}`+ '.'+ videoExtension);
+  console.log("====== Video Path ====== " + videoPath)
+  const writer = Fs.createWriteStream(videoPath);
+
+  var cmd=("ffmpeg -y -i " +  url + " -vcodec copy -acodec copy " + videoPath);
+  exec(cmd, (err) => {
+      if (err) return callback(err);
+      console.log("downloading success")
+      return callback(null, videoPath);
   })
 }
 
 function trimVideos(trims, videoPath, callback) {
-  const videoExtension = videoPath.split('.').pop().toLowerCase();
+  let videoExtension = videoPath.split('.').pop().toLowerCase();
+
   const trimsLocations = [];
-
   trims.forEach((element, index) => {
-    var hash_name = 'video' + index + Date.now() + '.' + videoExtension;
-    console.log(element, index)
-    var out_location = Path.resolve(__dirname, 'cropped', hash_name + '_trimmed.webm')
-    trimsLocations.push(out_location);
-    var cmd = 'ffmpeg -i ' + videoPath + ' -ss ' + element.from + ' -to ' + element.to + ' -async 1 -strict 2 ' + out_location;
-    console.log("Command" + cmd);
+   var hash_name = 'video' + index + Date.now() + '.webm';
+   var i=0;
+   var out_location = Path.join(__dirname, '/cropped/', `Trimmed_video_${Date.now()}_${parseInt(Math.random() * 10000)}`+ '.'+ videoExtension);
 
-   if (shell.exec(cmd, (error, stdout, stderr) => {
+   trimsLocations.push(out_location);
+   var cmd = 'ffmpeg -i ' + videoPath + ' -ss ' + element.from + ' -to ' + element.to + ' -async 1 -strict 2 ' + out_location;
+   i++;
+   console.log("Command" + cmd);
+
+   if ( exec(cmd, (error, stdout, stderr) => {
      console.log(stdout);
      console.info("Program Started");
      console.log(stderr);
@@ -48,7 +56,7 @@ function trimVideos(trims, videoPath, callback) {
        console.log(`Trimming Successuful !`);
      }
      }).code !== 0) {
-     shell.echo("Error");
+     shell.echo("==");
    }
   });
 
@@ -56,25 +64,22 @@ function trimVideos(trims, videoPath, callback) {
 }
 
 router.post('/send', function(req, res, next) {
- console.log('Hit Send')
- const url = req.body.inputVideoUrl;
-
- downloadVideo(url, (err, videoPath) => {
+  console.log('Hit Send')
+  const url = req.body.inputVideoUrl;
+  let videoExtension = url.split('.').pop().toLowerCase();
+  var videoPath = Path.join(__dirname, '/videos/', `video_${Date.now()}_${parseInt(Math.random() * 10000)}`+ '.'+ videoExtension);
+  downloadVideo(url, (err, videoPath) => {
    if (err || !videoPath || !Fs.existsSync(videoPath)) {
+     console.log(err)
      return res.status(400).send('Error downloading video');
-   } else {
-     res.render('index', {
-       message: "successfully video downloaded"
-     });
    }
-   console.log("video-downloaded successfully")
+
    trimVideos(req.body.trims, videoPath, (err, trimmedVideos) => {
     res.render('index', {
       message: "Trimming success"
     });
    })
  })
-//  start(req, res);
 
 });
 

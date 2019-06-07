@@ -27,3 +27,4 @@ routes/config.js
 
 #videos
 routes/videos/
+routes/cropped/
