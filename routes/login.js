@@ -52,9 +52,10 @@ router.get( "/", function ( req, res ) {
 	} );
 } );
 
-router.get( "/login", function ( req, res ) {
-	res.redirect( req.baseUrl + "/auth/mediawiki/callback" );
-} );
+// router.get( "/login", function ( req, res ) {
+// 	console.log("also went here");
+//
+// } );
 
 router.get( "/auth/mediawiki/callback", function( req, res, next ) {
 	passport.authenticate( "mediawiki", function( err, user ) {

@@ -11,7 +11,7 @@ const { exec } = require('child_process');
 var hash_name = 'video'
 
 /* GET home page. */
-router.get('/', function(req, res, next) {
+router.get('/video-cut-tool-back-end', function(req, res, next) {
  res.render('index', {
   title: 'VideoCutTool'
  });
@@ -85,6 +85,10 @@ router.post('/send', function(req, res, next) {
 
 router.get('/insert', function(req, res, next) {
  res.sendFile(path.join(__dirname + "/" + "htmlfiles/insert.html"));
+});
+
+router.get('/', function(req, res, next) {
+ res.redirect('/video-cut-tool-back-end')
 });
 
 module.exports = router;
