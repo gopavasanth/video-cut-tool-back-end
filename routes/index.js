@@ -110,7 +110,7 @@ function cropVideos( req, res, videoPath, callback) {
 	 var x_value = req.body.x_value;
 	 var y_value = req.body.y_value;
    cropsLocations.push(out_location);
-   var cmd = `'ffmpeg -i ' + videoPath + ' -filter:v ' + '"crop=' + out_width + ':' + out_height + ':' + x_value + ':' + y_value + '" -c:a copy ' + out_location`;
+   var cmd = 'ffmpeg -i ' + videoPath + ' -filter:v ' + '"crop=' + out_width + ':' + out_height + ':' + x_value + ':' + y_value + '" -c:a copy ' + out_location;
    i++;
    console.log("Command" + cmd);
 
