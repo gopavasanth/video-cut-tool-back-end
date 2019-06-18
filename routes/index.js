@@ -1,5 +1,3 @@
-var express = require('express');
-
 var express = require( "express" ),
 	session = require( "express-session" ),
 	passport = require( "passport" ),
@@ -8,6 +6,10 @@ var express = require( "express" ),
 
 	app = express(),
 	router = express.Router();
+
+app.set( "views", __dirname + "/public/views" );
+app.set( "view engine", "ejs" );
+
 var path = require('path');
 
 const Fs = require('fs');
@@ -18,9 +20,6 @@ const shell = require('shelljs');
 const { exec } = require('child_process');
 var hash_name = 'video';
 
-app.set( "views", __dirname + "/public/views" );
-app.set( "view engine", "ejs" );
-
 // app.use( express.static(__dirname + "/public/views") );
 app.use( passport.initialize() );
 app.use( passport.session() );
@@ -29,6 +28,7 @@ app.use( session({ secret: "OAuth Session",
 	saveUninitialized: true,
 	resave: true
 }) );
+
 passport.use(
 	new MediaWikiStrategy({
 		consumerKey: config.consumer_key,
@@ -71,16 +71,15 @@ function downloadVideo(url, callback) {
   })
 }
 
-function trimVideos(trims, videoPath, callback) {
+function trimVideos(trimMode, trims, videoPath, callback) {
+	console.log("==Trim Mode== " + trimMode)
   let videoExtension = videoPath.split('.').pop().toLowerCase();
   const trimsLocations = [];
   trims.forEach((element, index) => {
    var hash_name = 'video' + index + Date.now() + '.webm';
-   var i=0;
    var out_location = Path.join(__dirname, '/trimmed/', `Trimmed_video_${Date.now()}_${parseInt(Math.random() * 10000)}`+ '.'+ videoExtension);
    trimsLocations.push(out_location);
    var cmd = 'ffmpeg -i ' + videoPath + ' -ss ' + element.from + ' -to ' + element.to + ' -async 1 -strict 2 ' + out_location;
-   i++;
    console.log("Command" + cmd);
    if ( exec(cmd, (error, stdout, stderr) => {
      console.log(stdout);
@@ -93,8 +92,25 @@ function trimVideos(trims, videoPath, callback) {
      }).code !== 0) {
      shell.echo("==");
    }
-  });
 
+	 if ( trimMode == "single" ) {
+		 console.log("I got into Concataion");
+		 // var command = 'ffmpeg -f concat -safe 0 -i ' + ' <(for f in ./trimmed/*.webm; ' + ' do echo "file ' + ' $PWD/$f' + '"' + '; done) -c copy ./trimmed/output.webm';
+		 var command	= 'ffmpeg -f concat -safe 0 -i <(for f in ./trimmed/*.webm; do echo "file $PWD/$f"; done) -c copy ./trimmed/output.webm';
+		 if ( exec(command, (error, stdout, stderr) => {
+	     console.log(stdout);
+	     console.info("Program Started");
+	     console.log(stderr);
+	     if ( error !== null ) {
+	       console.log(error)
+	       console.log(`Concatatining Process Completed !`);
+	     }
+	     }).code !== 0) {
+	     shell.echo("==");
+	   }
+	 }
+
+  });
   return callback(null, trimsLocations);
 }
 
@@ -103,15 +119,20 @@ function cropVideos( req, res, videoPath, callback) {
 	let videoExtension = videoPath.split('.').pop().toLowerCase();
 
    var hash_name = 'video' + Date.now() + '.webm';
-   var i=0;
    var out_location = Path.join(__dirname, '/cropped/', `Trimmed_video_${Date.now()}_${parseInt(Math.random() * 10000)}`+ '.'+ videoExtension);
 	 var out_width = req.body.out_width;
 	 var out_height = req.body.out_height;
 	 var x_value = req.body.x_value;
 	 var y_value = req.body.y_value;
-   cropsLocations.push(out_location);
-   var cmd = 'ffmpeg -i ' + videoPath + ' -filter:v ' + '"crop=' + out_width + ':' + out_height + ':' + x_value + ':' + y_value + '" -c:a copy ' + out_location;
-   i++;
+  cropsLocations.push(out_location);
+	console.log('===Width=== ' + out_width)
+	console.log('===Height=== ' + out_height)
+	console.log('===X=== ' + x_value)
+	console.log('===Y=== ' + y_value)
+	console.log("===path===="+videoPath)
+	console.log("===videoExtension==="+videoExtension)
+	console.log("===out_location==="+out_location)
+	 var cmd = 'ffmpeg -i ' + videoPath + ' -filter:v ' + '"crop=' + out_width + ':' + out_height + ':' + x_value + ':' + y_value + '" -c:a copy ' + out_location;
    console.log("Command" + cmd);
 
    if ( exec(cmd, (error, stdout, stderr) => {
@@ -155,7 +176,7 @@ router.post('/send', function(req, res, next) {
 	   }
 
 			if (videoSettings == "trim") {
-				trimVideos(req.body.trims, videoPath, (err, trimmedVideos) => {
+				trimVideos(req.body.trimMode, req.body.trims, videoPath, (err, trimmedVideos) => {
 				 res.render('index', {
 					 message: "Trimming success"
 				 });
@@ -171,6 +192,7 @@ router.post('/send', function(req, res, next) {
 			}
 
 		})
+
 });
 
 router.get('/insert', function(req, res, next) {
@@ -179,13 +201,17 @@ router.get('/insert', function(req, res, next) {
   });
   });
 
-router.get( "/login", function ( req, res ) {
+router.get( "/video-cut-tool-back-end/login", function ( req, res ) {
 	res.redirect( req.baseUrl + "/auth/mediawiki/callback" );
 } );
 
-router.get('/', function(req, res, next) {
- res.redirect('/video-cut-tool-back-end')
-});
+// router.get('/', function(req, res, next) {
+//  res.redirect('/video-cut-tool-back-end')
+// });
+
+router.get( "/", function ( req, res ) {
+	res.redirect(req.baseUrl+'/video-cut-tool-back-end/');
+} );
 
 router.get('/auth/mediawiki/callback', function(req, res, next) {
   passport.authenticate( "mediawiki", function( err, user ) {
@@ -196,7 +222,6 @@ router.get('/auth/mediawiki/callback', function(req, res, next) {
  		if ( !user ) {
  			return res.redirect( req.baseUrl + "/login" );
  		}
-
 
  	} )( req, res, next );
 });

@@ -22,6 +22,7 @@
     "passport": "^0.4.0",
     "passport-mediawiki-oauth": "^0.1.0",
     "serve-favicon": "^2.5.0",
+    "session": "^0.1.0",
     "shelljs": "^0.8.3"
   }
 }
