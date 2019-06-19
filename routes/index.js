@@ -80,7 +80,7 @@ function trimVideos(trimMode, trims, videoPath, callback) {
    var out_location = Path.join(__dirname, '/trimmed/', `Trimmed_video_${Date.now()}_${parseInt(Math.random() * 10000)}`+ '.'+ videoExtension);
    trimsLocations.push(out_location);
    var cmd = 'ffmpeg -i ' + videoPath + ' -ss ' + element.from + ' -to ' + element.to + ' -async 1 -strict 2 ' + out_location;
-   console.log("Command" + cmd);
+   console.log("Command: " + cmd);
    if ( exec(cmd, (error, stdout, stderr) => {
      console.log(stdout);
      console.info("Program Started");
@@ -95,8 +95,7 @@ function trimVideos(trimMode, trims, videoPath, callback) {
 
 	 if ( trimMode == "single" ) {
 		 console.log("I got into Concataion");
-		 // var command = 'ffmpeg -f concat -safe 0 -i ' + ' <(for f in ./trimmed/*.webm; ' + ' do echo "file ' + ' $PWD/$f' + '"' + '; done) -c copy ./trimmed/output.webm';
-		 var command	= 'ffmpeg -f concat -safe 0 -i <(for f in ./trimmed/*.webm; do echo "file $PWD/$f"; done) -c copy ./trimmed/output.webm';
+		 var command	= 'ffmpeg -f concat -safe 0 -i <$(for f in ./trimmed/*.webm; do echo "file $PWD/$f"; done) -c copy ./trimmed/output.webm';
 		 if ( exec(command, (error, stdout, stderr) => {
 	     console.log(stdout);
 	     console.info("Program Started");
