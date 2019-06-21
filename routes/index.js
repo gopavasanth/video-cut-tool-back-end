@@ -71,15 +71,21 @@ function downloadVideo(url, callback) {
   })
 }
 
-function trimVideos(trimMode, trims, videoPath, callback) {
+function trimVideos(disableAudio, trimMode, trims, videoPath, callback) {
 	console.log("==Trim Mode== " + trimMode)
+	console.log("===disableAudio==="+disableAudio)
   let videoExtension = videoPath.split('.').pop().toLowerCase();
   const trimsLocations = [];
   trims.forEach((element, index) => {
    var hash_name = 'video' + index + Date.now() + '.webm';
    var out_location = Path.join(__dirname, '/trimmed/', `Trimmed_video_${Date.now()}_${parseInt(Math.random() * 10000)}`+ '.'+ videoExtension);
    trimsLocations.push(out_location);
-   var cmd = 'ffmpeg -i ' + videoPath + ' -ss ' + element.from + ' -to ' + element.to + ' -async 1 -strict 2 ' + out_location;
+
+	 if (disableAudio){
+		 	var cmd = 'ffmpeg -i ' + videoPath + ' -ss ' + element.from + ' -to ' + element.to + ' -async 1 -strict 2 ' + '-an ' + out_location;
+	 } else {
+		 	var cmd = 'ffmpeg -i ' + videoPath + ' -ss ' + element.from + ' -to ' + element.to + ' -async 1 -strict 2 ' + out_location;
+	 }
    console.log("Command: " + cmd);
    if ( exec(cmd, (error, stdout, stderr) => {
      console.log(stdout);
@@ -113,7 +119,7 @@ function trimVideos(trimMode, trims, videoPath, callback) {
   return callback(null, trimsLocations);
 }
 
-function cropVideos( req, res, videoPath, callback) {
+function cropVideos(disableAudio, req, res, videoPath, callback) {
 	const cropsLocations = [];
 	let videoExtension = videoPath.split('.').pop().toLowerCase();
 
@@ -124,14 +130,13 @@ function cropVideos( req, res, videoPath, callback) {
 	 var x_value = req.body.x_value;
 	 var y_value = req.body.y_value;
   cropsLocations.push(out_location);
-	console.log('===Width=== ' + out_width)
-	console.log('===Height=== ' + out_height)
-	console.log('===X=== ' + x_value)
-	console.log('===Y=== ' + y_value)
-	console.log("===path===="+videoPath)
-	console.log("===videoExtension==="+videoExtension)
-	console.log("===out_location==="+out_location)
-	 var cmd = 'ffmpeg -i ' + videoPath + ' -filter:v ' + '"crop=' + out_width + ':' + out_height + ':' + x_value + ':' + y_value + '" -c:a copy ' + out_location;
+
+	if ( disableAudio ) {
+			var cmd = 'ffmpeg -i ' + videoPath + ' -filter:v ' + '"crop=' + out_width + ':' + out_height + ':' + x_value + ':' + y_value + '" -c:a copy ' + '-an ' + out_location;
+	} else {
+			var cmd = 'ffmpeg -i ' + videoPath + ' -filter:v ' + '"crop=' + out_width + ':' + out_height + ':' + x_value + ':' + y_value + '" -c:a copy ' + out_location;
+	}
+
    console.log("Command" + cmd);
 
    if ( exec(cmd, (error, stdout, stderr) => {
@@ -151,6 +156,7 @@ function cropVideos( req, res, videoPath, callback) {
 
 router.post('/send', function(req, res, next) {
   console.log('Hit Send')
+	let disableAudio = req.body.removeAudio;
 	var out_width = req.body.out_width;
 	var out_height = req.body.out_height;
 	var x_value = req.body.x_value;
@@ -175,7 +181,7 @@ router.post('/send', function(req, res, next) {
 	   }
 
 			if (videoSettings == "trim") {
-				trimVideos(req.body.trimMode, req.body.trims, videoPath, (err, trimmedVideos) => {
+				trimVideos(disableAudio, req.body.trimMode, req.body.trims, videoPath, (err, trimmedVideos) => {
 				 res.render('index', {
 					 message: "Trimming success"
 				 });
@@ -183,7 +189,7 @@ router.post('/send', function(req, res, next) {
 			}
 
 			if (videoSettings == "crop") {
-				cropVideos( req, res, videoPath, (err, trimmedVideos) => {
+				cropVideos( disableAudio, req, res, videoPath, (err, trimmedVideos) => {
 		 		res.render('index', {
 		 			message: "Cropping success"
 		 		});
@@ -203,10 +209,6 @@ router.get('/insert', function(req, res, next) {
 router.get( "/video-cut-tool-back-end/login", function ( req, res ) {
 	res.redirect( req.baseUrl + "/auth/mediawiki/callback" );
 } );
-
-// router.get('/', function(req, res, next) {
-//  res.redirect('/video-cut-tool-back-end')
-// });
 
 router.get( "/", function ( req, res ) {
 	res.redirect(req.baseUrl+'/video-cut-tool-back-end/');
