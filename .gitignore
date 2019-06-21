@@ -29,3 +29,4 @@ routes/config.js
 routes/videos/
 routes/cropped/
 routes/trimmed/
+routes/rotate/

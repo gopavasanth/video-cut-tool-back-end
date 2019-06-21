@@ -119,12 +119,39 @@ function trimVideos(disableAudio, trimMode, trims, videoPath, callback) {
   return callback(null, trimsLocations);
 }
 
+function rotateVideos(RotateValue, videoPath, callback){
+	console.log("I'm Rotatted ");
+	const rotatesLocations = [];
+  let videoExtension = videoPath.split('.').pop().toLowerCase();
+	var out_location = Path.join(__dirname, '/rotate/', `Rotatted_video_${Date.now()}_${parseInt(Math.random() * 10000)}`+ '.'+ videoExtension);
+	rotatesLocations.push(out_location);
+	if (RotateValue == 0 || RotateValue == 1 || RotateValue == 2 || RotateValue == 3 ){
+		var cmd = 'ffmpeg -i ' + videoPath + ' -vf "transpose=' + RotateValue + '" '  + out_location;
+	}
+
+	console.log("Command" + cmd);
+	if ( exec(cmd, (error, stdout, stderr) => {
+		console.log(stdout);
+		console.info("Program Started");
+		console.log(stderr);
+		if (error !== null) {
+			console.log(error)
+			console.log(`Cropping Process Completed !`);
+		}
+		}).code !== 0) {
+		shell.echo("==");
+	}
+
+ return callback( null, rotatesLocations);
+
+}
+
 function cropVideos(disableAudio, req, res, videoPath, callback) {
 	const cropsLocations = [];
 	let videoExtension = videoPath.split('.').pop().toLowerCase();
 
    var hash_name = 'video' + Date.now() + '.webm';
-   var out_location = Path.join(__dirname, '/cropped/', `Trimmed_video_${Date.now()}_${parseInt(Math.random() * 10000)}`+ '.'+ videoExtension);
+   var out_location = Path.join(__dirname, '/cropped/', `Cropped_video_${Date.now()}_${parseInt(Math.random() * 10000)}`+ '.'+ videoExtension);
 	 var out_width = req.body.out_width;
 	 var out_height = req.body.out_height;
 	 var x_value = req.body.x_value;
@@ -156,6 +183,7 @@ function cropVideos(disableAudio, req, res, videoPath, callback) {
 
 router.post('/send', function(req, res, next) {
   console.log('Hit Send')
+	let RotateValue = req.body.value;
 	let disableAudio = req.body.removeAudio;
 	var out_width = req.body.out_width;
 	var out_height = req.body.out_height;
@@ -166,10 +194,10 @@ router.post('/send', function(req, res, next) {
   var videoPath = Path.join(__dirname, '/videos/', `video_${Date.now()}_${parseInt(Math.random() * 10000)}`+ '.'+ videoExtension);
 	var videoSettings;
 
-	if ( out_width == '' && out_height == '' && x_value == '' && y_value == '' ) {
+	if ( out_width == '' && out_height == '' && x_value == '' && y_value == '' && RotateValue == '' ) {
 			videoSettings = "trim";
 			console.log("Hey I'm trimmed")
-	} else {
+	} else if ( RotateValue == '' && videoSettings != "trim") {
 		videoSettings = "crop"
 		console.log("Hey I'm cropped")
 	}
@@ -185,6 +213,14 @@ router.post('/send', function(req, res, next) {
 				 res.render('index', {
 					 message: "Trimming success"
 				 });
+				})
+			}
+
+			if (RotateValue != '' && videoSettings != "trim" && videoSettings != "crop"){
+				rotateVideos(RotateValue, videoPath, (err, trimmedVideos) => {
+					res.render('index',{
+						message: "Rotating Sucess"
+					});
 				})
 			}
 
