@@ -91,8 +91,13 @@ function trimVideos( disableAudio, mode, trims, videoPath, callback ) {
 				 } else {
 						var cmd = 'ffmpeg -i ' + videoPath + ' -ss ' + element.from + ' -to ' + element.to + ' -async 1 -strict 2 ' + out_location;
 				 }
-
 				 console.log("Command: " + cmd);
+				 exec(cmd, (err) => {
+						 if (err) return callback(err);
+						 console.log("downloading success")
+						 return callback(null, videoDownloadPath);
+				 })
+
 				 if ( await exec(cmd, (error, stdout, stderr) => {
 					 console.log(stdout);
 					 console.info("Program Started");
@@ -203,7 +208,7 @@ router.post('/send', function(req, res, next) {
 	var x_value = req.body.x_value;
 	var y_value = req.body.y_value;
   const url = req.body.inputVideoUrl;
-	var mode = req.body.mode;
+	var mode = req.body.trimMode;
 	var trims = req.body.trims;
   let videoExtension = url.split('.').pop().toLowerCase();
   var videoPath = Path.join(__dirname, '/videos/', `video_${Date.now()}_${parseInt(Math.random() * 10000)}`+ '.'+ videoExtension);
