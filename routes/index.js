@@ -85,56 +85,43 @@ function trimVideos( disableAudio, mode, trims, videoPath, callback ) {
 					if (err) throw err;
 			})
 		 async.series([
-			 async function one (callback){
+			 function one (callback){
 				 if (disableAudio){
 						var cmd = 'ffmpeg -i ' + videoPath + ' -ss ' + element.from + ' -to ' + element.to + ' -async 1 -strict 2 ' + '-an ' + out_location;
 				 } else {
 						var cmd = 'ffmpeg -i ' + videoPath + ' -ss ' + element.from + ' -to ' + element.to + ' -async 1 -strict 2 ' + out_location;
 				 }
 				 console.log("Command: " + cmd);
-				 exec(cmd, (err) => {
-						 if (err) return callback(err);
-						 console.log("downloading success")
-						 return callback(null, videoDownloadPath);
-				 })
-
-				 if ( await exec(cmd, (error, stdout, stderr) => {
-					 console.log(stdout);
-					 console.info("Program Started");
-					 console.log(stderr);
-					 if (error !== null) {
-						 console.log(error)
-						 console.log(`Trimminng Process Completed !`);
-					 }
-					 }).code !== 0) {
-					 shell.echo("==");
-				 }
-				 callback(null, trimsLocations)
+				 if ( exec(cmd, (error, stdout, stderr) => {
+					if (error !== null) {
+						console.log(error)
+						console.log(`Trimminng Process Completed !`);
+					}
+					}).code !== 0) {
+					shell.echo("Completed");
+				}
+				callback(null, trimsLocations)
 			 },
 
 			function two (callback){
-				 console.log("Trimming is done and I'm starting Concataion");
-
 				 if ( mode == "single" ) {
 					 console.log("I got into Concataion");
-					 var command	= 'ffmpeg -f concat -safe 0 -i myfile -c copy ' + './routes/trimmed/outputvideo.webm';
-					 if ( exec(command, (error, stdout, stderr) => {
-						 console.log(stdout);
-						 console.info("Program Started");
-						 console.log(stderr);
-						 if ( error !== null ) {
-							 console.log(error)
-							 console.log(`Concatatining Process Completed !`);
-						 }
-						 }).code !== 0) {
-						 shell.echo("==");
-					 }
+					 var cmd	= 'ffmpeg -f concat -safe 0 -i myfile -c copy ' + out_location;
+					 if ( exec(cmd, (error, stdout, stderr) => {
+						if (error !== null) {
+							console.log(error)
+							console.log(`Trimminng Process Completed !`);
+						}
+						}).code !== 0) {
+						shell.echo("==");
+					}
+					callback(null, trimsLocations)
 				 }
 			 }
 
 		 ])
   });
-  return callback(null, trimsLocations);
+
 }
 
 function rotateVideos(disableAudio, RotateValue, videoPath, callback){
@@ -153,18 +140,11 @@ function rotateVideos(disableAudio, RotateValue, videoPath, callback){
 		}
 	}
 	console.log("Command" + cmd);
-	if ( exec(cmd, (error, stdout, stderr) => {
-		console.log(stdout);
-		console.info("Program Started");
-		console.log(stderr);
-		if (error !== null) {
-			console.log(error)
-			console.log(`Cropping Process Completed !`);
-		}
-		}).code !== 0) {
-		shell.echo("==");
-	}
- return callback( null, rotatesLocations);
+	exec(cmd, (err) => {
+		if (err) return callback(err);
+		console.log("Rotating success")
+	})
+	return callback(null, rotatesLocations);
 }
 
 function cropVideos(disableAudio, req, res, videoPath, callback) {
@@ -184,19 +164,11 @@ function cropVideos(disableAudio, req, res, videoPath, callback) {
 			var cmd = 'ffmpeg -i ' + videoPath + ' -filter:v ' + '"crop=' + out_width + ':' + out_height + ':' + x_value + ':' + y_value + '" -c:a copy ' + out_location;
 	}
    console.log("Command" + cmd);
-   if ( exec(cmd, (error, stdout, stderr) => {
-     console.log(stdout);
-     console.info("Program Started");
-     console.log(stderr);
-     if ( error !== null ) {
-       console.log( error )
-       console.log( `Cropping Process Completed !` );
-     }
-     }).code !== 0) {
-     shell.echo("==");
-   }
-
-  return callback(req, res, null, cropsLocations);
+	 exec(cmd, (err) => {
+		if (err) return callback(err);
+		console.log("Cropping success")
+	})
+	return callback(null, cropsLocations);
 }
 
 router.post('/send', function(req, res, next) {
