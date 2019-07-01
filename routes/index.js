@@ -121,7 +121,7 @@ function trimVideos( disableAudio, mode, trims, videoPath, callback ) {
 
 		 ])
   });
-
+	callback(null, trimsLocations)
 }
 
 function rotateVideos(disableAudio, RotateValue, videoPath, callback){
@@ -202,27 +202,34 @@ router.post('/send', function(req, res, next) {
 
 			if (videoSettings == "trim") {
 				trimVideos(disableAudio, mode, trims, videoPath, (err, trimmedVideos) => {
-				 res.render('index', {
-					 message: "Trimming success"
-				 });
-				})
+					var response = JSON.stringify({ 
+            message: "Trimming Sucess", 
+            status: "Completed", 
+          });
+          res.send(response);
+        })
 			}
 
 			if (mode == "rotate"){
 				rotateVideos(disableAudio, RotateValue, videoPath, (err, trimmedVideos) => {
-					res.render('index',{
-						message: "Rotating Sucess"
-					});
-				})
+					var response = JSON.stringify({ 
+            message: "Rotating Sucess", 
+            status: "Completed", 
+          });
+          res.send(response);
+        })
 			}
 
 			if (mode == "crop") {
 				cropVideos( disableAudio, req, res, videoPath, (err, trimmedVideos) => {
-		 		res.render('index', {
-		 			message: "Cropping success"
-		 		});
-		 	 })
-			}
+          var response = JSON.stringify({ 
+            message: "Cropping Sucess", 
+            status: "Completed", 
+          });
+          res.send(response);
+        })
+      }
+
 
 		})
 
