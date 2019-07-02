@@ -171,7 +171,7 @@ function cropVideos(disableAudio, req, res, videoPath, callback) {
 	return callback(null, cropsLocations);
 }
 
-router.post('/send', function(req, res, next) {
+router.post('/video-cut-tool-back-end/send', function(req, res, next) {
   console.log('Hit Send')
 	let RotateValue = req.body.value;
 	const disableAudio = req.body.disableAudio;
