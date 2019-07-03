@@ -63,7 +63,7 @@ function downloadVideo(url, callback) {
   let videoExtension = url.split('.').pop().toLowerCase();
   var videoDownloadPath = Path.join(__dirname, '/videos/', `video_${Date.now()}_${parseInt(Math.random() * 10000)}`+ '.'+ videoExtension);
   const writer = Fs.createWriteStream(videoDownloadPath);
-  var cmd=("ffmpeg -y -i " +  url + " -vcodec copy -acodec copy " + videoDownloadPath);
+  var cmd=("truncate -s 0 myfile; ffmpeg -y -i " +  url + " -vcodec copy -acodec copy " + videoDownloadPath);
   exec(cmd, (err) => {
       if (err) return callback(err);
       console.log("downloading success")
@@ -73,55 +73,54 @@ function downloadVideo(url, callback) {
 
 function trimVideos( disableAudio, mode, trims, videoPath, callback ) {
 	console.log("==Mode== " + mode)
-	console.log("===disableAudio==="+disableAudio)
-  let videoExtension = videoPath.split('.').pop().toLowerCase();
-  const trimsLocations = [];
-  trims.forEach((element, index) => {
-	   var hash_name = 'video' + index + Date.now() + '.webm';
-	   var out_location = Path.join(__dirname, '/trimmed/', `Trimmed_video_${Date.now()}_${parseInt(Math.random() * 10000)}`+ '.'+ videoExtension);
-	   trimsLocations.push(out_location);
+	console.log("===disableAudio===" + disableAudio)
+	let videoExtension = videoPath.split('.').pop().toLowerCase();
+	const trimsLocations = [];
+	const trimFuncArray = [];
 
-		 Fs.appendFile( 'myfile', "file '" + out_location + "'\n", (err) => {
-					if (err) throw err;
+	trims.forEach((element, index) => {
+
+			trimFuncArray.push(function one(callback) {
+					var hash_name = 'video' + index + Date.now() + '.webm';
+					var out_location = Path.join(__dirname, '/trimmed/', `Trimmed_video_${Date.now()}_${parseInt(Math.random() * 10000)}` + '.' + videoExtension);
+					trimsLocations.push(out_location);
+					Fs.appendFile('myfile', "file '" + out_location + "'\n", (err) => {
+							if (err) throw err;
+							if (disableAudio) {
+									var cmd = 'ffmpeg -i ' + videoPath + ' -ss ' + element.from + ' -to ' + element.to + ' -async 1 -strict 2 ' + '-an ' + out_location;
+							} else {
+									var cmd = 'ffmpeg -i ' + videoPath + ' -ss ' + element.from + ' -to ' + element.to + ' -async 1 -strict 2 ' + out_location;
+							}
+							console.log("Command: " + cmd);
+							if (exec(cmd, (error, stdout, stderr) => {
+									if (error !== null) {
+											console.log(error)
+											console.log(`Trimminng Process Completed !`);
+									}
+									callback(null, trimsLocations)
+							}).code !== 0) {
+									shell.echo("Completed");
+							}
+					})
 			})
-		 async.series([
-			 function one (callback){
-				 if (disableAudio){
-						var cmd = 'ffmpeg -i ' + videoPath + ' -ss ' + element.from + ' -to ' + element.to + ' -async 1 -strict 2 ' + '-an ' + out_location;
-				 } else {
-						var cmd = 'ffmpeg -i ' + videoPath + ' -ss ' + element.from + ' -to ' + element.to + ' -async 1 -strict 2 ' + out_location;
-				 }
-				 console.log("Command: " + cmd);
-				 if ( exec(cmd, (error, stdout, stderr) => {
-					if (error !== null) {
-						console.log(error)
-						console.log(`Trimminng Process Completed !`);
-					}
-					}).code !== 0) {
-					shell.echo("Completed");
-				}
-				callback(null, trimsLocations)
-			 },
+	});
 
-			function two (callback){
-				 if ( mode == "single" ) {
-					 console.log("I got into Concataion");
-					 var cmd	= 'ffmpeg -f concat -safe 0 -i myfile -c copy ' + out_location;
-					 if ( exec(cmd, (error, stdout, stderr) => {
-						if (error !== null) {
-							console.log(error)
-							console.log(`Trimminng Process Completed !`);
-						}
-						}).code !== 0) {
-						shell.echo("==");
+	async.series(trimFuncArray, () => {
+			if (mode === "single") {
+					console.log("I got into Concataion");
+					var out_location = Path.join(__dirname, '/trimmed/', `Concated_video_${Date.now()}_${parseInt(Math.random() * 10000)}` + '.' + videoExtension);
+					var cmd = 'ffmpeg -f concat -safe 0 -i myfile -c copy ' + out_location;
+					if (exec(cmd, (error, stdout, stderr) => {
+							if (error !== null) {
+									console.log(error)
+									console.log(`Trimminng Process Completed !`);
+							}
+					}).code !== 0) {
+							shell.echo("==");
 					}
 					callback(null, trimsLocations)
-				 }
-			 }
-
-		 ])
-  });
-	callback(null, trimsLocations)
+			}
+	})
 }
 
 function rotateVideos(disableAudio, RotateValue, videoPath, callback){
@@ -201,7 +200,7 @@ router.post('/video-cut-tool-back-end/send', function(req, res, next) {
 	   }
 
 			if (videoSettings == "trim") {
-				trimVideos(disableAudio, mode, trims, videoPath, (err, trimmedVideos) => {
+				trimVideos( disableAudio, mode, trims, videoPath, (err, trimmedVideos) => {
 					var response = JSON.stringify({ 
             message: "Trimming Sucess", 
             status: "Completed", 
