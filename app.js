@@ -6,12 +6,17 @@ const cookieParser = require('cookie-parser');
 const bodyParser = require('body-parser');
 const cors = require('cors'); // addition we make
 const fileUpload = require('express-fileupload'); //addition we make
+config = require( "./config" );
 
 const index = require('./routes/index');
 const users = require('./routes/users');
 const login = require('./routes/login');
 
 const app = express();
+
+var passport = require( "passport" ),
+    MediaWikiStrategy = require( "passport-mediawiki-oauth" ).OAuthStrategy,
+    session = require( "express-session" );
 
 // view engine setup
 app.set('views', path.join(__dirname, 'views'));
@@ -28,6 +33,40 @@ app.use(cookieParser());
 app.use(cors());
 app.use(fileUpload());
 
+app.use( passport.initialize() );
+app.use( passport.session() );
+
+app.use( session({ secret: "OAuth Session",
+    saveUninitialized: true,
+    resave: true
+}) );
+
+//app.use( "/nodejs-mw-oauth-tool", router );
+
+passport.use(
+    new MediaWikiStrategy({
+        consumerKey: config.consumer_key,
+        consumerSecret: config.consumer_secret
+    },
+    function ( token, tokenSecret, profile, done ) {
+        profile.oauth = {
+            consumer_key: config.consumer_key,
+            consumer_secret: config.consumer_secret,
+            token: token,
+            token_secret: tokenSecret
+        };
+        return done( null, profile );
+    }
+    ) );
+
+passport.serializeUser( function ( user, done ) {
+    done( null, user );
+});
+
+passport.deserializeUser( function ( obj, done ) {
+    done( null, obj );
+});
+
 // app.use('/public', express.static(__dirname + '/public'));
 
 app.use('/', index);
@@ -36,6 +75,23 @@ app.use('/login', (req, res) => {
   res.send(res.redirect( req.baseUrl + "/auth/mediawiki/callback" ))
 }
 ); // login
+
+app.get( "/video-cut-tool-back-end/login", function ( req, res ) {
+    res.redirect( "/video-cut-tool-back-end/auth/mediawiki/callback" );
+} );
+
+app.get('/video-cut-tool-back-end/auth/mediawiki/callback', function(req, res, next) {
+  passport.authenticate( "mediawiki", function( err, user ) {
+        if ( err ) {
+            return next( err );
+        }
+
+        if ( !user ) {
+            return res.redirect( req.baseUrl + "/login" );
+        }
+
+    } )( req, res, next );
+});
 
 // catch 404 and forward to error handler
 app.use(function(req, res, next) {
