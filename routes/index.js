@@ -2,12 +2,12 @@ var express = require( "express" ),
 	session = require( "express-session" ),
 	passport = require( "passport" ),
 	MediaWikiStrategy = require( "passport-mediawiki-oauth" ).OAuthStrategy,
-	config = require( "./config" ),
 	series = require("async-series"),
 	async = require('async'),
 	app = express(),
 	router = express.Router(),
 	path = require('path');
+	const http = require('http');
 
 app.set( "views", __dirname + "/public/views" );
 app.set( "view engine", "ejs" );
@@ -19,9 +19,8 @@ const Axios = require('axios');
 const shell = require('shelljs');
 const { exec } = require('child_process');
 
-var hash_name = 'video';
+app.use('/routes', express.static(__dirname + '/routes'));
 
-// app.use( express.static(__dirname + "/public/views") );
 app.use( passport.initialize() );
 app.use( passport.session() );
 app.use( session({ secret: "OAuth Session",
@@ -123,11 +122,12 @@ function trimVideos( disableAudio, mode, trims, videoPath, callback ) {
 	})
 }
 
-function rotateVideos(disableAudio, RotateValue, videoPath, callback){
+function rotateVideos(RotatedvideoName, disableAudio, RotateValue, videoPath, callback){
 	console.log("I'm Rotatted ");
 	const rotatesLocations = [];
 	let videoExtension = videoPath.split('.').pop().toLowerCase();
-	var out_location = Path.join(__dirname, '/rotate/', `Rotatted_video_${Date.now()}_${parseInt(Math.random() * 10000)}`+ '.'+ videoExtension);
+	var out_location = Path.join(__dirname, '/rotate/', RotatedvideoName + '.'+ videoExtension);
+	console.log("OutLocation: "  + out_location)
 	rotatesLocations.push(out_location);
 
 	if (RotateValue == 0 || RotateValue == 1 || RotateValue == 2 || RotateValue == 3 ){
@@ -135,7 +135,7 @@ function rotateVideos(disableAudio, RotateValue, videoPath, callback){
 		if (disableAudio) {
 			var cmd = 'ffmpeg -i ' + videoPath + ' -vf "transpose=' + RotateValue + '" ' + " -an " + out_location;
 		} else {
-			var cmd = 'ffmpeg -i ' + videoPath + ' -vf "transpose=' + RotateValue + '" '  + out_location;
+			var cmd = 'ffmpeg -i ' + videoPath + ' -vf "transpose=' + RotateValue + '" ' + out_location;
 		}
 	}
 	console.log("Command" + cmd);
@@ -143,14 +143,13 @@ function rotateVideos(disableAudio, RotateValue, videoPath, callback){
 		if (err) return callback(err);
 		console.log("Rotating success")
 	})
-	return callback(null, rotatesLocations);
+	return (callback(null, rotatesLocations));
 }
 
-function cropVideos(disableAudio, req, res, videoPath, callback) {
+function cropVideos( CroppedVideoName, disableAudio, req, res, videoPath, callback) {
 	const cropsLocations = [];
 	let videoExtension = videoPath.split('.').pop().toLowerCase();
-   var hash_name = 'video' + Date.now() + '.webm';
-   var out_location = Path.join(__dirname, '/cropped/', `Cropped_video_${Date.now()}_${parseInt(Math.random() * 10000)}`+ '.'+ videoExtension);
+   var out_location = Path.join(__dirname, '/cropped/' + CroppedVideoName + '.'+ videoExtension);
 	 var out_width = req.body.out_width;
 	 var out_height = req.body.out_height;
 	 var x_value = req.body.x_value;
@@ -181,8 +180,9 @@ router.post('/video-cut-tool-back-end/send', function(req, res, next) {
   const url = req.body.inputVideoUrl;
 	var mode = req.body.trimMode;
 	var trims = req.body.trims;
-  let videoExtension = url.split('.').pop().toLowerCase();
-  var videoPath = Path.join(__dirname, '/videos/', `video_${Date.now()}_${parseInt(Math.random() * 10000)}`+ '.'+ videoExtension);
+	let videoExtension = url.split('.').pop().toLowerCase();
+	let videoName = `video_${Date.now()}_${parseInt(Math.random() * 10000)}`
+  var videoPath = Path.join(__dirname, '/videos/' , videoName + '.'+ videoExtension);
 	var videoSettings;
 
 	console.log("==Your Video Mode is == " + mode );
@@ -203,27 +203,31 @@ router.post('/video-cut-tool-back-end/send', function(req, res, next) {
 				trimVideos( disableAudio, mode, trims, videoPath, (err, trimmedVideos) => {
 					var response = JSON.stringify({ 
             message: "Trimming Sucess", 
-            status: "Completed", 
+						status: "Completed",
           });
           res.send(response);
         })
 			}
 
 			if (mode == "rotate"){
-				rotateVideos(disableAudio, RotateValue, videoPath, (err, trimmedVideos) => {
+				var RotatedvideoName = `Rotatted_video_${Date.now()}_${parseInt(Math.random() * 10000)}`;
+				rotateVideos(RotatedvideoName, disableAudio, RotateValue, videoPath, (err, trimmedVideos) => {
 					var response = JSON.stringify({ 
             message: "Rotating Sucess", 
-            status: "Completed", 
+						status: "Completed", 
+						videoName: 'rotate/' + RotatedvideoName + '.' + videoExtension,
           });
           res.send(response);
         })
 			}
 
 			if (mode == "crop") {
-				cropVideos( disableAudio, req, res, videoPath, (err, trimmedVideos) => {
+				var CroppedVideoName =  `Cropped_video_${Date.now()}_${parseInt(Math.random() * 10000)}`;
+				cropVideos( CroppedVideoName, disableAudio, req, res, videoPath, (err, trimmedVideos) => {
           var response = JSON.stringify({ 
             message: "Cropping Sucess", 
-            status: "Completed", 
+						status: "Completed", 
+						videoName: 'cropped/' + CroppedVideoName + '.' + videoExtension,
           });
           res.send(response);
         })

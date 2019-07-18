@@ -11,7 +11,6 @@ config = require( "./config" );
 const index = require('./routes/index');
 const users = require('./routes/users');
 const login = require('./routes/login');
-
 const app = express();
 
 var passport = require( "passport" ),
@@ -54,10 +53,19 @@ passport.use(
             consumer_secret: config.consumer_secret,
             token: token,
             token_secret: tokenSecret
-        };
+        }, (accessToken, refreshToken, profile, done) => {
+            console.log('passport callback function fired');
+            console.log(profile);
+            new User({
+                username: profile.displayName,
+                id: profile.id
+            }).save().then((newUser) => {
+                console.log("New User Created: " + newUser);
+            });
+        }
         return done( null, profile );
-    }
-    ) );
+    })  
+);
 
 passport.serializeUser( function ( user, done ) {
     done( null, user );
@@ -67,7 +75,7 @@ passport.deserializeUser( function ( obj, done ) {
     done( null, obj );
 });
 
-// app.use('/public', express.static(__dirname + '/public'));
+app.use('/routes', express.static(__dirname + '/routes'));
 
 app.use('/', index);
 app.use('/login', (req, res) => {
