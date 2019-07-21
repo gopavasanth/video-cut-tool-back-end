@@ -54,7 +54,9 @@ passport.deserializeUser( function ( obj, done ) {
 /* GET home page. */
 router.get('/video-cut-tool-back-end', function(req, res, next) {
  res.render('index', {
-  title: 'VideoCutTool'
+	title: 'VideoCutTool',
+	user: req && req.session && req.session.user,
+	url: req.baseUrl
  });
 });
 

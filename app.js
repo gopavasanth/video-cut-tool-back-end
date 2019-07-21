@@ -10,7 +10,6 @@ config = require( "./config" );
 
 const index = require('./routes/index');
 const users = require('./routes/users');
-const login = require('./routes/login');
 const app = express();
 
 var passport = require( "passport" ),
@@ -19,7 +18,7 @@ var passport = require( "passport" ),
 
 // view engine setup
 app.set('views', path.join(__dirname, 'views'));
-app.set('view engine', 'jade');
+app.set('view engine', 'ejs');
 
 // uncomment after placing your favicon in /public
 //app.use(favicon(path.join(__dirname, 'public', 'favicon.ico')));
@@ -84,22 +83,35 @@ app.use('/login', (req, res) => {
 }
 ); // login
 
+app.get( "/logout" , function ( req, res ) {
+	delete req.session.user;
+	res.redirect( req.baseUrl + "/" );
+} );
+
+
 app.get( "/video-cut-tool-back-end/login", function ( req, res ) {
     res.redirect( "/video-cut-tool-back-end/auth/mediawiki/callback" );
 } );
 
 app.get('/video-cut-tool-back-end/auth/mediawiki/callback', function(req, res, next) {
-  passport.authenticate( "mediawiki", function( err, user ) {
-        if ( err ) {
-            return next( err );
-        }
+	passport.authenticate( "mediawiki", function( err, user ) {
+		if ( err ) { 
+			return next( err ); 
+		}
 
-        if ( !user ) {
-            return res.redirect( req.baseUrl + "/login" );
-        }
+		if ( !user ) { 
+			return res.redirect( req.baseUrl + "/login" ); 
+		}
 
-    } )( req, res, next );
-});
+		req.logIn( user, function( err ) {
+			if ( err ) { 
+				return next( err ); 
+			}
+			req.session.user = user;
+			res.redirect( req.baseUrl + "/" );
+		} );
+	} )( req, res, next );
+} );
 
 // catch 404 and forward to error handler
 app.use(function(req, res, next) {
