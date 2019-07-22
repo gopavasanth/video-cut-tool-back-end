@@ -23,7 +23,7 @@ yarn-debug.log*
 yarn-error.log*
 
 #config.js
-routes/config.js
+config.js
 
 #videos
 routes/videos/
