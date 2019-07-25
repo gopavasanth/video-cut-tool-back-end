@@ -22,6 +22,14 @@ const Listr = require('listr');
 const Axios = require('axios');
 const shell = require('shelljs');
 const { exec } = require('child_process');
+const BASE_URL = 'https://commons.wikimedia.org/w/api.php';
+
+const oauth = OAuth({
+	consumer: {
+	  key: config.consumer_key,
+	  secret: config.consumer_secret,
+	},
+  })
 
 app.use('/routes', express.static(__dirname + '/routes'));
 
@@ -289,8 +297,9 @@ router.post('/video-cut-tool-back-end/send', function(req, res, next) {
 							message: "Trimming Sucess", 
 							status: "Completed"
 						});
+						console.log("Response: " + response);
 						console.log("Hello");
-						console.log("===Trim Locations==: " + trimsLocations);
+						console.log("===Trim Locations==: " + trimmedVideos);
 						res.send(response);
 					}
 					if (mode === "single"){

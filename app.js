@@ -7,23 +7,14 @@ const bodyParser = require('body-parser');
 const cors = require('cors'); // addition we make
 const fileUpload = require('express-fileupload'); //addition we make
 config = require( "./config" );
+const { User: UserModel } = require('./models/User'); 
+const User = require('./models/User')
 
 const mongoose = require('mongoose');
-const User = require("./user-model")
-const MongoClient = require('mongodb').MongoClient;
 
-mongoose.Promise = global.Promise
+const uri = "mongodb+srv://Gopa:" + config.password + "@cluster0-rmrcx.mongodb.net/test?retryWrites=true&w=majority";// const User = require("./user-model")
 
-const uri = "mongodb+srv://Gopa:" + config.password + "@cluster0-rmrcx.mongodb.net/test?retryWrites=true&w=majority";
-const client = new MongoClient(uri, { useNewUrlParser: true });
-client.connect(err => {
-  const collection = client.db("test").collection("users")
-  .then(db => console.log('DB conectada'))
-  .catch(err => console.log(error));
-  // perform actions on the collection object
-  client.close();
-});
-
+mongoose.connect(uri, { useNewUrlParser: true })
 
 const index = require('./routes/index');
 const users = require('./routes/users');
@@ -64,25 +55,46 @@ passport.use(
         consumerKey: config.consumer_key,
         consumerSecret: config.consumer_secret
     },
-    function ( token, tokenSecret, profile, done ) {
-        profile.oauth = {
-            consumer_key: config.consumer_key,
-            consumer_secret: config.consumer_secret,
-            token: token,
-            token_secret: tokenSecret
-        }, (accessToken, refreshToken, profile, done) => {
-            console.log('passport callback function fired');
-            console.log(profile);
-            new User({
+
+    (token, tokenSecret, profile, done) => {
+        // asynchronous verification, for effect...
+        process.nextTick(() => {
+
+          UserModel.findOne({ mediawikiId: profile.id }, (err, userInfo) => {
+            if (err) return done(err)
+            if (userInfo) {
+              // User already exists, update access token and secret
+              const userData = {
+                mediawikiId: profile.id,
                 username: profile.displayName,
-                id: profile.id
-            }).save().then((newUser) => {
-                console.log("New User Created: " + newUser);
-            });
-        }
-        return done( null, profile );
-    })  
-);
+                mediawikiToken: token,
+                mediawikiTokenSecret: tokenSecret,
+              };
+  
+              UserModel.findByIdAndUpdate(userInfo._id, { $set: { mediawikiToken: token, mediawikiTokenSecret: tokenSecret } }, { new: true }, (err, userInfo) => {
+                if (err) return done(err);
+                return done(null, {
+                  _id: userInfo._id,
+                  mediawikiId: profile.id,
+                  username: profile.displayName,
+                  mediawikiToken: token,
+                })
+              })
+            } else {
+              // User dont exst, create one
+              const newUserData = { mediawikiId: profile.id, username: profile.displayName, mediawikiToken: token, mediawikiTokenSecret: tokenSecret };
+              const newUser = new UserModel(newUserData)
+  
+              newUser.save((err) => {
+                if (err) return done(err)
+                return done(null, newUser)
+              })
+            }
+          })
+        })
+      }
+));
+  
 
 passport.serializeUser( function ( user, done ) {
     done( null, user );
