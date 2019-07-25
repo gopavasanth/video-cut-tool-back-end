@@ -8,6 +8,10 @@ var express = require( "express" ),
 	router = express.Router(),
 	path = require('path');
 	const http = require('http');
+	var mongoose = require('mongoose');
+	let ejs = require('ejs');
+
+	// var mongoose = require('mongoose');
 
 app.set( "views", __dirname + "/public/views" );
 app.set( "view engine", "ejs" );
@@ -21,12 +25,21 @@ const { exec } = require('child_process');
 
 app.use('/routes', express.static(__dirname + '/routes'));
 
+
 app.use( passport.initialize() );
 app.use( passport.session() );
 app.use( session({ secret: "OAuth Session",
 	saveUninitialized: true,
 	resave: true
 }) );
+
+// mongoose.connect('localhost:4000/video-cut-tool-back-end', function (err) {
+ 
+//    if (err) throw err;
+ 
+//    console.log('Successfully connected');
+ 
+// });
 
 passport.use(
 	new MediaWikiStrategy({
@@ -72,13 +85,12 @@ function downloadVideo(url, callback) {
   })
 }
 
-function trimVideos( SinglevideoName, disableAudio, mode, trims, videoPath, callback ) {
+function trimVideos( trimmedVideos, SinglevideoName, disableAudio, mode, trims, videoPath, callback ) {
 	console.log("==Mode== " + mode)
 	console.log("===disableAudio===" + disableAudio)
 	let videoExtension = videoPath.split('.').pop().toLowerCase();
 	const trimFuncArray = [];
 	const trimsLocations = [];
-	const trimmedVideos = [];
 	trims.forEach((element, index) => {
 
 			trimFuncArray.push(function one(callback) {
@@ -96,16 +108,14 @@ function trimVideos( SinglevideoName, disableAudio, mode, trims, videoPath, call
 									var cmd = 'ffmpeg -i ' + videoPath + ' -ss ' + element.from + ' -to ' + element.to + ' -async 1 -strict 2 ' + out_location;
 							}
 							console.log("Command: " + cmd);
-							if (exec(cmd, (error, stdout, stderr) => {
+							exec(cmd, (error, stdout, stderr) => {
 									if (error !== null) {
 											console.log(error)
 											console.log(`Trimminng Process Completed !`);
 									}
 									console.log("Trimmed Video Names: " + trimmedVideos);
-									callback(null, trimsLocations)
-							}).code !== 0) {
-									shell.echo("Completed");
-							}
+									callback(null, trimmedvideoName)
+							})
 					})
 			})
 	});
@@ -146,7 +156,7 @@ function rotateVideos(RotatedvideoName, disableAudio, RotateValue, videoPath, ca
 		}
 	}
 	console.log("Command" + cmd);
-	exec(cmd, (err) => {
+	 exec(cmd, (err) => {
 		if (err) return callback(err);
 		console.log("Rotating success")
 	})
@@ -271,15 +281,16 @@ router.post('/video-cut-tool-back-end/send', function(req, res, next) {
 	   }
 
 			if (videoSettings == "trim") {
+				const trimmedVideos = [];
 				var SinglevideoName = `Concated_video_${Date.now()}_${parseInt(Math.random() * 10000)}`;
-				trimVideos( SinglevideoName, disableAudio, mode, trims, videoPath, (err, trimmedVideos) => {
+				trimVideos( trimmedVideos, SinglevideoName, disableAudio, mode, trims, videoPath, (err, trimmedVideos) => {
 					if (mode === "multiple"){
 						var response = JSON.stringify({ 
 							message: "Trimming Sucess", 
-							status: "Completed",
-							videoName: trimmedVideos
+							status: "Completed"
 						});
-						console.log("Trim Locations: " + trimsLocations);
+						console.log("Hello");
+						console.log("===Trim Locations==: " + trimsLocations);
 						res.send(response);
 					}
 					if (mode === "single"){
@@ -297,12 +308,12 @@ router.post('/video-cut-tool-back-end/send', function(req, res, next) {
 				var RotatedvideoName = `Rotatted_video_${Date.now()}_${parseInt(Math.random() * 10000)}`;
 				rotateVideos(RotatedvideoName, disableAudio, RotateValue, videoPath, (err, trimmedVideos) => {
 					var response = JSON.stringify({ 
-            message: "Rotating Sucess", 
+           				message: "Rotating Sucess", 
 						status: "Completed", 
 						videoName: 'rotate/' + RotatedvideoName + '.' + videoExtension,
-          });
-          res.send(response);
-        })
+         			 });
+         		 res.send(response);
+        	})
 			}
 
 			if (mode == "crop") {

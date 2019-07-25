@@ -8,6 +8,23 @@ const cors = require('cors'); // addition we make
 const fileUpload = require('express-fileupload'); //addition we make
 config = require( "./config" );
 
+const mongoose = require('mongoose');
+const User = require("./user-model")
+const MongoClient = require('mongodb').MongoClient;
+
+mongoose.Promise = global.Promise
+
+const uri = "mongodb+srv://Gopa:" + config.password + "@cluster0-rmrcx.mongodb.net/test?retryWrites=true&w=majority";
+const client = new MongoClient(uri, { useNewUrlParser: true });
+client.connect(err => {
+  const collection = client.db("test").collection("users")
+  .then(db => console.log('DB conectada'))
+  .catch(err => console.log(error));
+  // perform actions on the collection object
+  client.close();
+});
+
+
 const index = require('./routes/index');
 const users = require('./routes/users');
 const app = express();
@@ -17,11 +34,12 @@ var passport = require( "passport" ),
     session = require( "express-session" );
 
 // view engine setup
-app.set('views', path.join(__dirname, 'views'));
+app.set('views', __dirname + '/views');
 app.set('view engine', 'ejs');
-
+app.use(express.static(path.join(__dirname, 'public')));
 // uncomment after placing your favicon in /public
 //app.use(favicon(path.join(__dirname, 'public', 'favicon.ico')));
+
 app.use(logger('dev'));
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
