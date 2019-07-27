@@ -12,7 +12,7 @@ const User = require('./models/User')
 
 const mongoose = require('mongoose');
 
-const uri = "mongodb+srv://Gopa:" + config.password + "@cluster0-rmrcx.mongodb.net/test?retryWrites=true&w=majority";// const User = require("./user-model")
+const uri = "mongodb+srv://Gopa:" + config.password + "@cluster0-rmrcx.mongodb.net/test?retryWrites=true&w=majority";
 
 mongoose.connect(uri, { useNewUrlParser: true })
 

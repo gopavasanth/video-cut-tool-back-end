@@ -10,7 +10,7 @@ var express = require( "express" ),
 	const http = require('http');
 	var mongoose = require('mongoose');
 	let ejs = require('ejs');
-
+const OAuth = require('oauth-1.0a');
 	// var mongoose = require('mongoose');
 
 app.set( "views", __dirname + "/public/views" );
@@ -310,33 +310,32 @@ router.post('/video-cut-tool-back-end/send', function(req, res, next) {
 						});
 						res.send(response);
 					}
-        })
+				})
 			}
 
 			if (mode == "rotate"){
 				var RotatedvideoName = `Rotatted_video_${Date.now()}_${parseInt(Math.random() * 10000)}`;
 				rotateVideos(RotatedvideoName, disableAudio, RotateValue, videoPath, (err, trimmedVideos) => {
 					var response = JSON.stringify({ 
-           				message: "Rotating Sucess", 
+						message: "Rotating Sucess",
 						status: "Completed", 
 						videoName: 'rotate/' + RotatedvideoName + '.' + videoExtension,
-         			 });
-         		 res.send(response);
-        	})
+					});
+					res.send(response);
+				})
 			}
 
 			if (mode == "crop") {
 				var CroppedVideoName =  `Cropped_video_${Date.now()}_${parseInt(Math.random() * 10000)}`;
 				cropVideos( CroppedVideoName, disableAudio, req, res, videoPath, (err, trimmedVideos) => {
-          var response = JSON.stringify({ 
-            message: "Cropping Sucess", 
-						status: "Completed", 
+					var response = JSON.stringify({
+						message: "Cropping Sucess",
+						status: "Completed",
 						videoName: 'cropped/' + CroppedVideoName + '.' + videoExtension,
-          });
-          res.send(response);
-        })
-      }
-
+					});
+					res.send(response);
+				})
+			}
 
 		})
 
