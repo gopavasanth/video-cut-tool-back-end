@@ -11,7 +11,9 @@ var express = require( "express" ),
 	var mongoose = require('mongoose');
 	let ejs = require('ejs');
 const OAuth = require('oauth-1.0a');
-	// var mongoose = require('mongoose');
+const wikiUpload = require('../models/wikiUploadUtils');
+const User = require('../models/User');
+const baseUrl = 'https://commons.wikimedia.org/w/api.php';
 
 app.set( "views", __dirname + "/public/views" );
 app.set( "view engine", "ejs" );
@@ -29,7 +31,7 @@ const oauth = OAuth({
 	  key: config.consumer_key,
 	  secret: config.consumer_secret,
 	},
-  })
+})
 
 app.use('/routes', express.static(__dirname + '/routes'));
 
@@ -194,70 +196,6 @@ function cropVideos( CroppedVideoName, disableAudio, req, res, videoPath, callba
 	return callback(null, cropsLocations);
 }
 
-function uploadFileToMediawiki(key, secret, file, options, callback) {
-	if (!callback) {
-		callback = () => { }
-	}
-
-	const token = {
-		key,
-		secret,
-	}
-	return new Promise((resolve, reject) => {
-		// fetch an update csrf token
-
-		const requestData = {
-			url: `${BASE_URL}?action=query&meta=tokens&type=csrf&format=json`,
-			method: 'POST',
-		}
-		request({
-			url: requestData.url,
-			method: requestData.method,
-			headers: oauth.toHeader(oauth.authorize(requestData, token)),
-		}, (err, response, body) => {
-			if (err) {
-				reject(err)
-				return callback(err)
-			}
-			const parsedBody = JSON.parse(body)
-			const csrfToken = parsedBody.query.tokens.csrftoken
-
-			const requestData = {
-				url: `${BASE_URL}?action=upload&ignorewarnings=true&format=json`,
-				method: 'POST',
-				formData: {
-					file,
-					token: csrfToken,
-					...options,
-				},
-			}
-			// perform upload
-			request({
-				url: requestData.url,
-				method: requestData.method,
-				formData: requestData.formData,
-				headers: oauth.toHeader(oauth.authorize(requestData, token)),
-			}, (err, response, body) => {
-				const parsedBody = JSON.parse(body)
-
-				if (parsedBody.error) {
-					reject(parsedBody.error)
-					return callback(parsedBody.error)
-				}
-
-				if (parsedBody.upload && parsedBody.upload.result.toLowerCase() === 'success') {
-					resolve(parsedBody.upload)
-					return callback(null, parsedBody.upload)
-				} else {
-					reject(parsedBody.upload)
-					return callback(parsedBody.upload)
-				}
-			})
-		})
-	})
-};
-
-
 router.post('/video-cut-tool-back-end/send', function(req, res, next) {
   console.log('Hit Send')
 	let RotateValue = req.body.value;
@@ -337,8 +275,139 @@ router.post('/video-cut-tool-back-end/send', function(req, res, next) {
 				})
 			}
 
-		})
+			if (mode == "upload"){
+				function uploadFileToCommons(fileUrl, user, formFields, callback) {
+					const {
+					  fileTitle,
+					  description,
+					  categories,
+					  licence,
+					  source,
+					  sourceUrl,
+					  sourceAuthors,
+					  comment,
+					  date,
+					  customLicence,
+					} = formFields
+					let file;
+					const errors = []
+				  
+					if (!user) {
+					  errors.push('Invalid user');
+					}
+					if (fileUrl) {
+					  file = fs.createReadStream(fileUrl);
+					} else {
+					  errors.push('File is required')
+					}
+				  
+					if (!fileTitle) {
+					  errors.push('File title is required')
+					}
+					if (!description) {
+					  errors.push('Description is required')
+					}
+					if (!categories || categories.length === 0) {
+					  errors.push('At least one category is required')
+					}
+					if (!source) {
+					  errors.push('Source field is required')
+					}
+					if (!date) {
+					  errors.push('Date field is required')
+					}
+					if (!licence) {
+					  errors.push('Licence field is required')
+					}
+					if (source && source === 'others' && !sourceUrl) {
+					  errors.push('Please specify the source of the file')
+					}
+					if (errors.length > 0) {
+					  console.log(errors)
+					  return callback(errors.join(', '))
+					}
+				  
+					if (file) {
+					  const uploadFuncArray = []
+					  let token, tokenSecret
+					  // convert file
+					  uploadFuncArray.push((cb) => {
+						console.log('Logging in wikimedia')
+						User
+						  .findOne({ mediawikiId: user.mediawikiId })
+						  .select('mediawikiToken mediawikiTokenSecret')
+						  .exec((err, userInfo) => {
+							if (err) {
+							  return callback('Something went wrong, please try again')
+							}
+							if (!userInfo || !userInfo.mediawikiToken || !userInfo.mediawikiTokenSecret) {
+							  return callback('You need to login first');
+							}
+							token = userInfo.mediawikiToken
+							tokenSecret = userInfo.mediawikiTokenSecret
+							cb()
+						  })
+					  })
+				  
+					  uploadFuncArray.push((cb) => {
+						console.log(' starting upload, the file is ')
+						let licenceInfo;
+						if (customLicence) {
+						  licenceInfo = licence;
+						} else {
+						  licenceInfo = licence === 'none' ? 'none' : `{{${source === 'own' ? 'self|' : ''}${licence}}}`;
+						}
+				  
+						const fileDescription = `{{Information|description=${description}|date=${date}|source=${source === 'own' ? `{{${source}}}` : sourceUrl}|author=${source === 'own' ? `[[User:${user.username}]]` : sourceAuthors}}}`;
+						// upload file to mediawiki
+						wikiUpload.uploadFileToMediawiki(
+						  token,
+						  tokenSecret,
+						  file,
+						  {
+							filename: fileTitle,
+							comment: comment || '',
+							text: `${description} \n${categories.map((category) => `[[${category}]]`).join(' ')}`,
+						  },
+						).then((result) => {
+						  if (result.result && result.result.toLowerCase() === 'success') {
+							// update file licencing data
+							console.log('uploaded', result)
+							const wikiFileUrl = result.imageinfo.url;
+							const fileInfo = result.imageinfo;
+							const uploadedFileName = result.filename;
+							const wikiFileName = `File:${result.filename}`;
+							const pageText = `== {{int:filedesc}} == \n${fileDescription}\n\n=={{int:license-header}}== \n ${licenceInfo} \n\n${categories.map((category) => `[[${category}]]`).join(' ')}\n`;
+				  
+							wikiUpload.updateWikiArticleText(token, tokenSecret, wikiFileName, pageText, (err, result) => {
+							  if (err) {
+								console.log('error updating file info', err);
+							  }
+							  console.log('updated text ', result);
+							  return callback(null, { success: true, url: wikiFileUrl, fileInfo, filename: uploadedFileName });
+							})
+						  } else {
+							return callback('Something went wrong!')
+						  }
+						})
+						.catch((err) => {
+						  console.log('error uploading file ', err)
+						  const reason = err && err.code ? `Error [${err.code}]${!err.info ? '' : `: ${err.info}`}` : 'Something went wrong'
+						  cb()
+						  return callback(reason)
+						})
+					  })
+				  
+					  async.series(uploadFuncArray, (err, result) => {
+						console.log(err, result)
+					  })
+					} else {
+					  return callback('Error while uploading file')
+					}
+				  }
+				}	
 
+		})
 });
 
 router.get('/insert', function(req, res, next) {
