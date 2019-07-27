@@ -7,7 +7,7 @@ const bodyParser = require('body-parser');
 const cors = require('cors'); // addition we make
 const fileUpload = require('express-fileupload'); //addition we make
 config = require( "./config" );
-const { User: UserModel } = require('./models/User'); 
+const UserModel = require('./models/User'); 
 const User = require('./models/User')
 
 const mongoose = require('mongoose');
