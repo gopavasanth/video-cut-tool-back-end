@@ -50,50 +50,98 @@ app.use( session({ secret: "OAuth Session",
 
 //app.use( "/nodejs-mw-oauth-tool", router );
 
-passport.use(
-    new MediaWikiStrategy({
-        consumerKey: config.consumer_key,
-        consumerSecret: config.consumer_secret
-    },
+// passport.use(
+//     new MediaWikiStrategy({
+//         consumerKey: config.consumer_key,
+//         consumerSecret: config.consumer_secret
+//     },
 
+//     (token, tokenSecret, profile, done) => {
+//         // asynchronous verification, for effect...
+//         process.nextTick(() => {
+
+//           UserModel.findOne({ mediawikiId: profile.id }, (err, userInfo) => {
+//             if (err) return done(err)
+//             if (userInfo) {
+//               // User already exists, update access token and secret
+//               const userData = {
+//                 mediawikiId: profile.id,
+//                 username: profile.displayName,
+//                 mediawikiToken: token,
+//                 mediawikiTokenSecret: tokenSecret,
+//               };
+  
+//               UserModel.findByIdAndUpdate(userInfo._id, { $set: { mediawikiToken: token, mediawikiTokenSecret: tokenSecret } }, { new: true }, (err, userInfo) => {
+//                 if (err) return done(err);
+//                 return done(null, {
+//                   _id: userInfo._id,
+//                   mediawikiId: profile.id,
+//                   username: profile.displayName,
+//                   mediawikiToken: token,
+//                 })
+//               })
+//             } else {
+//               // User dont exst, create one
+//               const newUserData = { mediawikiId: profile.id, username: profile.displayName, mediawikiToken: token, mediawikiTokenSecret: tokenSecret };
+//               const newUser = new UserModel(newUserData)
+  
+//               newUser.save((err) => {
+//                 if (err) return done(err)
+//                 return done(null, newUser)
+//               })
+//             }
+//           })
+//         })
+//       }
+// ));
+
+module.exports = (passport) => {
+
+  passport.use(new MediaWikiStrategy({
+    baseURL: 'https://commons.wikimedia.org/',
+    consumerKey: config.consumer_key,
+    consumerSecret: config.consumer_secret
+  },
     (token, tokenSecret, profile, done) => {
-        // asynchronous verification, for effect...
-        process.nextTick(() => {
+      // asynchronous verification, for effect...
+      process.nextTick(() => {
 
-          UserModel.findOne({ mediawikiId: profile.id }, (err, userInfo) => {
-            if (err) return done(err)
-            if (userInfo) {
-              // User already exists, update access token and secret
-              const userData = {
+        UserModel.findOne({ mediawikiId: profile.id }, (err, userInfo) => {
+          if (err) return done(err)
+          if (userInfo) {
+            // User already exists, update access token and secret
+            const userData = {
+              mediawikiId: profile.id,
+              username: profile.displayName,
+              mediawikiToken: token,
+              mediawikiTokenSecret: tokenSecret,
+            };
+
+            UserModel.findByIdAndUpdate(userInfo._id, { $set: { mediawikiToken: token, mediawikiTokenSecret: tokenSecret } }, { new: true }, (err, userInfo) => {
+              if (err) return done(err);
+              authExchangeChannel.publish(RABBITMQ_AUTH_EXCHANGE, '', new Buffer(JSON.stringify(userData)));
+              return done(null, {
+                _id: userInfo._id,
                 mediawikiId: profile.id,
                 username: profile.displayName,
                 mediawikiToken: token,
-                mediawikiTokenSecret: tokenSecret,
-              };
-  
-              UserModel.findByIdAndUpdate(userInfo._id, { $set: { mediawikiToken: token, mediawikiTokenSecret: tokenSecret } }, { new: true }, (err, userInfo) => {
-                if (err) return done(err);
-                return done(null, {
-                  _id: userInfo._id,
-                  mediawikiId: profile.id,
-                  username: profile.displayName,
-                  mediawikiToken: token,
-                })
               })
-            } else {
-              // User dont exst, create one
-              const newUserData = { mediawikiId: profile.id, username: profile.displayName, mediawikiToken: token, mediawikiTokenSecret: tokenSecret };
-              const newUser = new UserModel(newUserData)
-  
-              newUser.save((err) => {
-                if (err) return done(err)
-                return done(null, newUser)
-              })
-            }
-          })
+            })
+          } else {
+            // User dont exst, create one
+            const newUserData = { mediawikiId: profile.id, username: profile.displayName, mediawikiToken: token, mediawikiTokenSecret: tokenSecret };
+            const newUser = new UserModel(newUserData)
+
+            newUser.save((err) => {
+              if (err) return done(err)
+              return done(null, newUser)
+            })
+          }
         })
-      }
-));
+      })
+    },
+  ))
+}
   
 
 passport.serializeUser( function ( user, done ) {
