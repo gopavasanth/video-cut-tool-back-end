@@ -47,58 +47,57 @@ app.use(fileUpload());
 app.use( passport.initialize() );
 app.use( passport.session() );
 
-app.use( session({ secret: "OAuth Session",
+app.use(
+   session({
+    secret: "OAuth Session",
     saveUninitialized: true,
     resave: true
-}) );
+  })
+);
 
+passport.use(new MediaWikiStrategy({
+  baseURL: 'https://commons.wikimedia.org/',
+  consumerKey: config.consumer_key,
+  consumerSecret: config.consumer_secret
+},
+  (token, tokenSecret, profile, done) => {
+    // asynchronous verification, for effect...
+    process.nextTick(() => {
 
+      UserModel.findOne({ mediawikiId: profile.id }, (err, userInfo) => {
+        if (err) return done(err)
+        if (userInfo) {
+          // User already exists, update access token and secret
+          const userData = {
+            mediawikiId: profile.id,
+            username: profile.displayName,
+            mediawikiToken: token,
+            mediawikiTokenSecret: tokenSecret,
+          };
 
-  passport.use(new MediaWikiStrategy({
-    baseURL: 'https://commons.wikimedia.org/',
-    consumerKey: config.consumer_key,
-    consumerSecret: config.consumer_secret
-  },
-    (token, tokenSecret, profile, done) => {
-      // asynchronous verification, for effect...
-      process.nextTick(() => {
-
-        UserModel.findOne({ mediawikiId: profile.id }, (err, userInfo) => {
-          if (err) return done(err)
-          if (userInfo) {
-            // User already exists, update access token and secret
-            const userData = {
+          UserModel.findByIdAndUpdate(userInfo._id, { $set: { mediawikiToken: token, mediawikiTokenSecret: tokenSecret } }, { new: true }, (err, userInfo) => {
+            if (err) return done(err);
+            return done(null, {
+              _id: userInfo._id,
               mediawikiId: profile.id,
               username: profile.displayName,
               mediawikiToken: token,
-              mediawikiTokenSecret: tokenSecret,
-            };
-
-            UserModel.findByIdAndUpdate(userInfo._id, { $set: { mediawikiToken: token, mediawikiTokenSecret: tokenSecret } }, { new: true }, (err, userInfo) => {
-              if (err) return done(err);
-              return done(null, {
-                _id: userInfo._id,
-                mediawikiId: profile.id,
-                username: profile.displayName,
-                mediawikiToken: token,
-              })
             })
-          } else {
-            // User dont exst, create one
-            const newUserData = { mediawikiId: profile.id, username: profile.displayName, mediawikiToken: token, mediawikiTokenSecret: tokenSecret };
-            const newUser = new UserModel(newUserData)
+          })
+        } else {
+          // User dont exst, create one
+          const newUserData = { mediawikiId: profile.id, username: profile.displayName, mediawikiToken: token, mediawikiTokenSecret: tokenSecret };
+          const newUser = new UserModel(newUserData)
 
-            newUser.save((err) => {
-              if (err) return done(err)
-              return done(null, newUser)
-            })
-          }
-        })
+          newUser.save((err) => {
+            if (err) return done(err)
+            return done(null, newUser)
+          })
+        }
       })
-    },
-  ))
-
-  
+    })
+  },
+))
 
 passport.serializeUser( function ( user, done ) {
     done( null, user );
@@ -122,6 +121,13 @@ app.get( "/logout" , function ( req, res ) {
 	res.redirect( req.baseUrl + "/" );
 } );
 
+app.get('/video-cut-tool-back-end', function(req, res, next) {
+  res.render('index', {
+   title: 'VideoCutTool',
+   user: req && req.session && req.session.user,
+   url: req.baseUrl
+  });
+ });
 
 app.get( "/video-cut-tool-back-end/login", function ( req, res ) {
     res.redirect( "/video-cut-tool-back-end/auth/mediawiki/callback" );
@@ -142,27 +148,27 @@ app.get('/video-cut-tool-back-end/auth/mediawiki/callback', function(req, res, n
 				return next( err ); 
 			}
 			req.session.user = user;
-			res.redirect( req.baseUrl + "/" );
+      res.redirect( req.baseUrl + "/" );
 		} );
 	} )( req, res, next );
 } );
 
 // catch 404 and forward to error handler
 app.use(function(req, res, next) {
-const err = new Error('Not Found');
-err.status = 404;
-next(err);
+  const err = new Error('Not Found');
+  err.status = 404;
+  next(err);
 });
 
 // error handler
 app.use(function(err, req, res, next) {
-// set locals, only providing error in development
-res.locals.message = err.message;
-res.locals.error = req.app.get('env') === 'development' ? err : {};
+  // set locals, only providing error in development
+  res.locals.message = err.message;
+  res.locals.error = req.app.get('env') === 'development' ? err : {};
 
-// render the error page
-res.status(err.status || 500);
-res.render('error');
+  // render the error page
+  res.status(err.status || 500);
+  res.render('error');
 });
 
 module.exports = app;
