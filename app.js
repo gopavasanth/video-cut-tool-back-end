@@ -12,9 +12,13 @@ const User = require('./models/User')
 
 const mongoose = require('mongoose');
 
-const uri = "mongodb+srv://Gopa:" + config.password + "@cluster0-rmrcx.mongodb.net/test?retryWrites=true&w=majority";
+// const uri = "mongodb+srv://Gopa:" + config.password + "@cluster0-rmrcx.mongodb.net/test?retryWrites=true&w=majority";
+const uri = "mongodb://localhost/video-cut-tool";
 
-mongoose.connect(uri, { useNewUrlParser: true })
+mongoose.connect(uri, { useNewUrlParser: true }, (err) => {
+  console.log(err);
+  console.log(connected);
+});
 
 const index = require('./routes/index');
 const users = require('./routes/users');
@@ -48,54 +52,7 @@ app.use( session({ secret: "OAuth Session",
     resave: true
 }) );
 
-//app.use( "/nodejs-mw-oauth-tool", router );
 
-// passport.use(
-//     new MediaWikiStrategy({
-//         consumerKey: config.consumer_key,
-//         consumerSecret: config.consumer_secret
-//     },
-
-//     (token, tokenSecret, profile, done) => {
-//         // asynchronous verification, for effect...
-//         process.nextTick(() => {
-
-//           UserModel.findOne({ mediawikiId: profile.id }, (err, userInfo) => {
-//             if (err) return done(err)
-//             if (userInfo) {
-//               // User already exists, update access token and secret
-//               const userData = {
-//                 mediawikiId: profile.id,
-//                 username: profile.displayName,
-//                 mediawikiToken: token,
-//                 mediawikiTokenSecret: tokenSecret,
-//               };
-  
-//               UserModel.findByIdAndUpdate(userInfo._id, { $set: { mediawikiToken: token, mediawikiTokenSecret: tokenSecret } }, { new: true }, (err, userInfo) => {
-//                 if (err) return done(err);
-//                 return done(null, {
-//                   _id: userInfo._id,
-//                   mediawikiId: profile.id,
-//                   username: profile.displayName,
-//                   mediawikiToken: token,
-//                 })
-//               })
-//             } else {
-//               // User dont exst, create one
-//               const newUserData = { mediawikiId: profile.id, username: profile.displayName, mediawikiToken: token, mediawikiTokenSecret: tokenSecret };
-//               const newUser = new UserModel(newUserData)
-  
-//               newUser.save((err) => {
-//                 if (err) return done(err)
-//                 return done(null, newUser)
-//               })
-//             }
-//           })
-//         })
-//       }
-// ));
-
-module.exports = (passport) => {
 
   passport.use(new MediaWikiStrategy({
     baseURL: 'https://commons.wikimedia.org/',
@@ -119,7 +76,6 @@ module.exports = (passport) => {
 
             UserModel.findByIdAndUpdate(userInfo._id, { $set: { mediawikiToken: token, mediawikiTokenSecret: tokenSecret } }, { new: true }, (err, userInfo) => {
               if (err) return done(err);
-              authExchangeChannel.publish(RABBITMQ_AUTH_EXCHANGE, '', new Buffer(JSON.stringify(userData)));
               return done(null, {
                 _id: userInfo._id,
                 mediawikiId: profile.id,
@@ -141,7 +97,7 @@ module.exports = (passport) => {
       })
     },
   ))
-}
+
   
 
 passport.serializeUser( function ( user, done ) {

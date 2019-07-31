@@ -2,6 +2,9 @@ const request = require('request')
 const OAuth = require('oauth-1.0a')
 const crypto = require('crypto')
 const { exec } = require('child_process')
+const fs = require('fs');
+const {out_location} = require('../routes/index');
+var config = require('../config');
 
 const oauth = OAuth({
   consumer: {
@@ -10,10 +13,13 @@ const oauth = OAuth({
   }
 })
 
-module.exports = (function () {
-  const BASE_URL = 'https://commons.wikimedia.org/w/api.php'
-
+  const BASE_URL = 'https://commons.wikimedia.org/w/api.php';
+  console.log("Out Location: " + out_location);
+  let file = __dirname + '/../routes/videos/in.mp4';
+  console.log("File : " + file);
+  fs.createReadStream(file);
   function uploadFileToMediawiki(key, secret, file, options, callback) {
+    
     if (!callback) {
       callback = () => { }
     }
@@ -74,9 +80,9 @@ module.exports = (function () {
         })
       })
     })
-  }
+
 
   return {
     uploadFileToMediawiki
   }
-})()
+}
