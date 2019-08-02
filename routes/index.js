@@ -21,7 +21,7 @@ const baseUrl = 'https://commons.wikimedia.org/w/api.php';
 app.set( "views", __dirname + "/public/views" );
 app.set( "view engine", "ejs" );
 
-const Fs = require('fs');
+const fs = require('fs');
 const Path = require('path');
 const Listr = require('listr');
 const Axios = require('axios');
@@ -37,7 +37,6 @@ const oauth = OAuth({
 })
 
 app.use('/routes', express.static(__dirname + '/routes'));
-
 
 app.use( passport.initialize() );
 app.use( passport.session() );
@@ -89,7 +88,7 @@ router.get('/video-cut-tool-back-end', function(req, res, next) {
 function downloadVideo(url, callback) {
   let videoExtension = url.split('.').pop().toLowerCase();
   var videoDownloadPath = Path.join(__dirname, '/videos/', `video_${Date.now()}_${parseInt(Math.random() * 10000)}`+ '.'+ videoExtension);
-  const writer = Fs.createWriteStream(videoDownloadPath);
+  const writer = fs.createWriteStream(videoDownloadPath);
   var cmd=("truncate -s 0 myfile; ffmpeg -y -i " +  url + " -vcodec copy -acodec copy " + videoDownloadPath);
   exec(cmd, (err) => {
       if (err) return callback(err);
@@ -98,7 +97,7 @@ function downloadVideo(url, callback) {
   })
 }
 
-function trimVideos( trimmedVideos, SinglevideoName, disableAudio, mode, trims, videoPath, callback ) {
+function trimVideos( upload, trimmedVideos, SinglevideoName, disableAudio, mode, trims, videoPath, callback ) {
 	console.log("==Mode== " + mode)
 	console.log("===disableAudio===" + disableAudio)
 	let videoExtension = videoPath.split('.').pop().toLowerCase();
@@ -113,7 +112,7 @@ function trimVideos( trimmedVideos, SinglevideoName, disableAudio, mode, trims, 
 					var trimmedvideoName = '/trimmed/' + videoName + '.' + videoExtension;
 					trimsLocations.push(out_location);
 					trimmedVideos.push(trimmedvideoName);
-					Fs.appendFile('myfile', "file '" + out_location + "'\n", (err) => {
+					fs.appendFile('myfile', "file '" + out_location + "'\n", (err) => {
 							if (err) throw err;
 							if (disableAudio) {
 									var cmd = 'ffmpeg -i ' + videoPath + ' -ss ' + element.from + ' -to ' + element.to + ' -async 1 -strict 2 ' + '-an ' + out_location;
@@ -152,18 +151,18 @@ function trimVideos( trimmedVideos, SinglevideoName, disableAudio, mode, trims, 
 
 }
 
-function rotateVideos(RotatedvideoName, disableAudio, RotateValue, videoPath, callback){
+function rotateVideos( upload, RotatedvideoName, disableAudio, RotateValue, videoPath, callback){
 	console.log("I'm Rotatted ");
 	const rotatesLocations = [];
 	let videoExtension = videoPath.split('.').pop().toLowerCase();
 	var out_location = Path.join(__dirname, '/rotate/', RotatedvideoName + '.'+ videoExtension);
-	console.log("OutLocation: "  + out_location)
+	console.log("Out location: "  + out_location)
 	rotatesLocations.push(out_location);
 
 	if ( RotateValue == 0 || RotateValue == 1 || RotateValue == 2 || RotateValue == 3 ){
 		// I'm justing changing RotateValue here and assigning to 1 as for now the 
 		// the video should rotate only 90 degreee clock wise
-		RotateValue == 1;
+		RotateValue == '1';
 		console.log("Disable Audio: " + disableAudio)
 		if (disableAudio) {
 			var cmd = 'ffmpeg -i ' + videoPath + ' -vf "transpose=' + RotateValue + '" ' + " -an " + out_location;
@@ -179,7 +178,7 @@ function rotateVideos(RotatedvideoName, disableAudio, RotateValue, videoPath, ca
 	return (callback(null, rotatesLocations));
 }
 
-function cropVideos( CroppedVideoName, disableAudio, req, res, videoPath, callback) {
+function cropVideos( upload, CroppedVideoName, disableAudio, req, res, videoPath, callback) {
 	const cropsLocations = [];
 	let videoExtension = videoPath.split('.').pop().toLowerCase();
    var out_location = Path.join(__dirname, '/cropped/' + CroppedVideoName + '.'+ videoExtension);
@@ -204,20 +203,24 @@ function cropVideos( CroppedVideoName, disableAudio, req, res, videoPath, callba
 
 router.post('/video-cut-tool-back-end/send', function(req, res, next) {
   console.log('Hit Send')
-	let RotateValue = req.body.value;
 	const disableAudio = req.body.disableAudio;
 	var out_width = req.body.out_width;
 	var out_height = req.body.out_height;
 	var x_value = req.body.x_value;
 	var y_value = req.body.y_value;
-  const url = req.body.inputVideoUrl;
+  	const url = req.body.inputVideoUrl;
 	var mode = req.body.trimMode;
 	var trims = req.body.trims;
 	var user = req.body.user;
 	let videoExtension = url.split('.').pop().toLowerCase();
 	let videoName = `video_${Date.now()}_${parseInt(Math.random() * 10000)}`
-  var videoPath = Path.join(__dirname, '/videos/' , videoName + '.'+ videoExtension);
+  	var videoPath = Path.join(__dirname, '/videos/' , videoName + '.'+ videoExtension);
 	var videoSettings;
+	var upload = req.body.upload;
+
+	// I'm justing changing RotateValue here and assigning to 1 as for now the 
+	// the video should rotate only 90 degreee clock wise
+	let RotateValue = 1;
 
 	console.log("==Your Video Mode is == " + mode );
 	console.log("==You Video Audio Disablity is == " + disableAudio)
@@ -228,7 +231,7 @@ router.post('/video-cut-tool-back-end/send', function(req, res, next) {
 	}
 
 	downloadVideo(url, (err, videoPath) => {
-	   if (err || !videoPath || !Fs.existsSync(videoPath)) {
+	   if (err || !videoPath || !fs.existsSync(videoPath)) {
 	     console.log(err)
 	     return res.status(400).send('Error downloading video');
 	   }
@@ -236,7 +239,7 @@ router.post('/video-cut-tool-back-end/send', function(req, res, next) {
 			if (videoSettings == "trim") {
 				const trimmedVideos = [];
 				var SinglevideoName = `Concated_video_${Date.now()}_${parseInt(Math.random() * 10000)}`;
-				trimVideos( trimmedVideos, SinglevideoName, disableAudio, mode, trims, videoPath, (err, trimmedVideos) => {
+				trimVideos( upload, trimmedVideos, SinglevideoName, disableAudio, mode, trims, videoPath, (err, trimmedVideos) => {
 					if (mode === "multiple"){
 						var response = JSON.stringify({ 
 							message: "Trimming Sucess", 
@@ -245,7 +248,25 @@ router.post('/video-cut-tool-back-end/send', function(req, res, next) {
 						console.log("Response: " + response);
 						console.log("Hello");
 						console.log("===Trim Locations==: " + trimmedVideos);
-						res.send(response);
+
+						if ( upload == true ) {
+							uploadFileToMediawiki(
+								user.mediawikiToken,
+								user.mediawikiSecret,
+								fs.createWriteStream('trimmed/' + SinglevideoName + '.' + videoExtension),
+								{   filename : 'NewEncodedVideo' + videoExtension,
+									text: 'New Text'  
+								},
+								(err, response) => {
+									if (err) {
+										console.log(err);
+									}
+								}
+							)
+							res.send(response);
+						} else {
+							res.send(response);
+						}
 					}
 					if (mode === "single"){
 						var response = JSON.stringify({ 
@@ -253,10 +274,43 @@ router.post('/video-cut-tool-back-end/send', function(req, res, next) {
 							status: "Completed",
 							videoName: 'trimmed/' + SinglevideoName + '.' + videoExtension,
 						});
-						wikiUpload.uploadFileToMediawiki(
-							user.mediawikiToken,
-							user.mediawikiSecret,
-							fs.createWriteStream('trimmed/' + SinglevideoName + '.' + videoExtension),
+						if ( upload == true ) {
+							uploadFileToMediawiki(
+								user.mediawikiToken,
+								user.mediawikiSecret,
+								fs.createWriteStream('trimmed/' + SinglevideoName + '.' + videoExtension),
+								{   filename : 'NewEncodedVideo' + videoExtension,
+									text: 'New Text'  
+								},
+								(err, response) => {
+									if (err) {
+										console.log(err);
+									}
+								}
+							)
+							res.send(response);
+						} else {
+							res.send(response);
+						}
+					}
+				})
+			}
+
+			if (mode == "rotate"){
+				var RotatedvideoName = `Rotatted_video_${Date.now()}_${parseInt(Math.random() * 10000)}`;
+				rotateVideos( upload, RotatedvideoName, disableAudio, RotateValue, videoPath, (err, trimmedVideos) => {
+					var response = JSON.stringify({ 
+						message: "Rotating Sucess",
+						status: "Completed", 
+						videoName: 'rotate/' + RotatedvideoName + '.' + videoExtension,
+					});
+
+					if ( upload == true ) {
+						uploadFileToMediawiki(
+							"5c5c571c2aa0415d8e44c692c43422e4",
+							"72cbabf1134ad9b1c3c4cefdb363357bc18bae6d",
+							// fs.createWriteStream('rotate/' + RotatedvideoName + '.' + videoExtension),
+							fs.createWriteStream('/home/gopavasanth/Desktop/GSoC19/VideoCutTool-Back-End/routes/rotate/rotate_video.mp4' ),
 							{   filename : 'NewEncodedVideo' + videoExtension,
 								text: 'New Text'  
 							},
@@ -267,57 +321,38 @@ router.post('/video-cut-tool-back-end/send', function(req, res, next) {
 							}
 						)
 						res.send(response);
+					} else {
+						res.send(response);
 					}
-				})
-			}
-
-			if (mode == "rotate"){
-				var RotatedvideoName = `Rotatted_video_${Date.now()}_${parseInt(Math.random() * 10000)}`;
-				rotateVideos(RotatedvideoName, disableAudio, RotateValue, videoPath, (err, trimmedVideos) => {
-					var response = JSON.stringify({ 
-						message: "Rotating Sucess",
-						status: "Completed", 
-						videoName: 'rotate/' + RotatedvideoName + '.' + videoExtension,
-					});
-					wikiUpload.uploadFileToMediawiki(
-						user.mediawikiToken,
-						user.mediawikiSecret,
-						fs.createWriteStream('rotate/' + RotatedvideoName + '.' + videoExtension),
-						{   filename : 'NewEncodedVideo' + videoExtension,
-							text: 'New Text'  
-						},
-						(err, response) => {
-							if (err) {
-								console.log(err);
-							}
-						}
-					)
-					res.send(response);
 				})
 			}
 
 			if (mode == "crop") {
 				var CroppedVideoName =  `Cropped_video_${Date.now()}_${parseInt(Math.random() * 10000)}`;
-				cropVideos( CroppedVideoName, disableAudio, req, res, videoPath, (err, trimmedVideos) => {
+				cropVideos( upload, CroppedVideoName, disableAudio, req, res, videoPath, (err, trimmedVideos) => {
 					var response = JSON.stringify({
 						message: "Cropping Sucess",
 						status: "Completed",
 						videoName: 'cropped/' + CroppedVideoName + '.' + videoExtension,
 					});
-					wikiUpload.uploadFileToMediawiki(
-						user.mediawikiToken,
-						user.mediawikiSecret,
-						fs.createWriteStream('cropped/' + CroppedVideoName + '.' + videoExtension),
-						{   filename : 'NewEncodedVideo' + videoExtension,
-							text: 'New Text'  
-						},
-						(err, response) => {
-							if (err) {
-								console.log(err);
+					if ( upload == true ) {
+						wikiUpload.uploadFileToMediawiki(
+							user.mediawikiToken,
+							user.mediawikiSecret,
+							fs.createWriteStream('cropped/' + CroppedVideoName + '.' + videoExtension),
+							{   filename : 'NewEncodedVideo' + videoExtension,
+								text: 'New Text'  
+							},
+							(err, response) => {
+								if (err) {
+									console.log(err);
+								}
 							}
-						}
-					)
-					res.send(response);
+						)
+						res.send(response)
+					} else {
+						res.send(response);
+					}
 				})
 			}
 		})
