@@ -26,6 +26,7 @@
     "oauth-1.0a": "^2.2.6",
     "passport": "^0.4.0",
     "passport-mediawiki-oauth": "^0.1.0",
+    "popup-tools": "^1.0.2",
     "request": "^2.88.0",
     "serve-favicon": "^2.5.0",
     "session": "^0.1.0",

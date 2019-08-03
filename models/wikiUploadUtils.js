@@ -15,9 +15,9 @@ const oauth = OAuth({
 
   const BASE_URL = 'https://commons.wikimedia.org/w/api.php';
   console.log("Out Location: " + out_location);
-  let file = __dirname + '/../routes/videos/in.mp4';
-  console.log("File : " + file);
-  fs.createReadStream(file);
+  // let file = __dirname + '/../routes/videos/in.mp4';
+  // console.log("File : " + file);
+  // fs.createReadStream(file);
   function uploadFileToMediawiki(key, secret, file, options, callback) {
     
     if (!callback) {

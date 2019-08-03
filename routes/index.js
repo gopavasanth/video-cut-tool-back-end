@@ -11,6 +11,7 @@ var express = require( "express" ),
 	var mongoose = require('mongoose');
 	let ejs = require('ejs');
 	var out_location = 'nothing';
+	const PopupTools = require('popup-tools')
 
 var config = require('../config');
 const OAuth = require('oauth-1.0a');
@@ -53,21 +54,28 @@ app.use( session({ secret: "OAuth Session",
  
 // });
 
-passport.use(
-	new MediaWikiStrategy({
-		consumerKey: config.consumer_key,
-		consumerSecret: config.consumer_secret
-	},
-	function ( token, tokenSecret, profile, done ) {
-		profile.oauth = {
-			consumer_key: config.consumer_key,
-			consumer_secret: config.consumer_secret,
-			token: token,
-			token_secret: tokenSecret
-		};
-		return done( null, profile );
-	}
-	) );
+// passport.use(
+// 	new MediaWikiStrategy({
+// 		consumerKey: config.consumer_key,
+// 		consumerSecret: config.consumer_secret
+// 	},
+// 	function ( token, tokenSecret, profile, done ) {
+// 		profile.oauth = {
+// 			consumer_key: config.consumer_key,
+// 			consumer_secret: config.consumer_secret,
+// 			token: token,
+// 			token_secret: tokenSecret
+// 		};
+// 		const userProfile = {
+// 			...profile,
+// 			oauth: {
+// 				token: token,
+// 				token_secret: tokenSecret
+// 			}
+// 		}
+// 		return done( null, userProfile );
+// 	}
+// 	) );
 
 passport.serializeUser(	function ( user, done ) {
 	done( null, user );
@@ -368,24 +376,25 @@ router.get('/insert', function(req, res, next) {
   });
 
 router.get( "/video-cut-tool-back-end/login", function ( req, res ) {
-	res.redirect( req.baseUrl + "/auth/mediawiki/callback" );
+	res.redirect( req.baseUrl + "/auth/mediawiki" );
 } );
 
 router.get( "/", function ( req, res ) {
 	res.redirect(req.baseUrl+'/video-cut-tool-back-end/');
 } );
 
-router.get('/auth/mediawiki/callback', function(req, res, next) {
-  passport.authenticate( "mediawiki", function( err, user ) {
- 		if ( err ) {
- 			return next( err );
- 		}
 
- 		if ( !user ) {
- 			return res.redirect( req.baseUrl + "/login" );
- 		}
+router.get('/auth/mediawiki', passport.authenticate( "mediawiki"), () => {
 
- 	} )( req, res, next );
 });
+
+router.get('/auth/mediawiki/callback', passport.authenticate('mediawiki', {
+    failureRedirect: '/login',
+  }), (req, res) => {
+    const user = JSON.parse(JSON.stringify(req.user));
+
+	res.end(PopupTools.popupResponse({ user }));
+
+  })
 
 module.exports = router;

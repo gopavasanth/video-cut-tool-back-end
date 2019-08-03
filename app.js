@@ -17,7 +17,7 @@ const uri = "mongodb://localhost/video-cut-tool";
 
 mongoose.connect(uri, { useNewUrlParser: true }, (err) => {
   console.log(err);
-  console.log(connected);
+  // console.log(connected);
 });
 
 const index = require('./routes/index');
@@ -82,6 +82,7 @@ passport.use(new MediaWikiStrategy({
               mediawikiId: profile.id,
               username: profile.displayName,
               mediawikiToken: token,
+              mediawikiTokenSecret: tokenSecret,
             })
           })
         } else {
@@ -128,30 +129,6 @@ app.get('/video-cut-tool-back-end', function(req, res, next) {
    url: req.baseUrl
   });
  });
-
-app.get( "/video-cut-tool-back-end/login", function ( req, res ) {
-    res.redirect( "/video-cut-tool-back-end/auth/mediawiki/callback" );
-} );
-
-app.get('/video-cut-tool-back-end/auth/mediawiki/callback', function(req, res, next) {
-	passport.authenticate( "mediawiki", function( err, user ) {
-		if ( err ) { 
-			return next( err ); 
-		}
-
-		if ( !user ) { 
-			return res.redirect( req.baseUrl + "/login" ); 
-		}
-
-		req.logIn( user, function( err ) {
-			if ( err ) { 
-				return next( err ); 
-			}
-			req.session.user = user;
-      res.redirect( req.baseUrl + "/" );
-		} );
-	} )( req, res, next );
-} );
 
 // catch 404 and forward to error handler
 app.use(function(req, res, next) {
