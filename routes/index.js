@@ -223,6 +223,7 @@ router.post('/video-cut-tool-back-end/send', function(req, res, next) {
 	let RotateValue = 1;
 
 	console.log("==Your Video Mode is == " + mode );
+	console.log("Your video upload to commons is " + upload );
 	console.log("==You Video Audio Disablity is == " + disableAudio)
 
 	if ( mode == "single" || mode == "multiple" ) {
@@ -240,7 +241,7 @@ router.post('/video-cut-tool-back-end/send', function(req, res, next) {
 				const trimmedVideos = [];
 				var SinglevideoName = `Concated_video_${Date.now()}_${parseInt(Math.random() * 10000)}`;
 				trimVideos( upload, trimmedVideos, SinglevideoName, disableAudio, mode, trims, videoPath, (err, trimmedVideos) => {
-					if (mode === "multiple"){
+					if ( mode === "multiple" ){
 						var response = JSON.stringify({ 
 							message: "Trimming Sucess", 
 							status: "Completed"
@@ -250,7 +251,7 @@ router.post('/video-cut-tool-back-end/send', function(req, res, next) {
 						console.log("===Trim Locations==: " + trimmedVideos);
 
 						if ( upload == true ) {
-							uploadFileToMediawiki(
+							wikiUpload.uploadFileToMediawiki(
 								user.mediawikiToken,
 								user.mediawikiSecret,
 								fs.createWriteStream('trimmed/' + SinglevideoName + '.' + videoExtension),
@@ -275,7 +276,7 @@ router.post('/video-cut-tool-back-end/send', function(req, res, next) {
 							videoName: 'trimmed/' + SinglevideoName + '.' + videoExtension,
 						});
 						if ( upload == true ) {
-							uploadFileToMediawiki(
+							wikiUpload.uploadFileToMediawiki(
 								user.mediawikiToken,
 								user.mediawikiSecret,
 								fs.createWriteStream('trimmed/' + SinglevideoName + '.' + videoExtension),
@@ -297,6 +298,7 @@ router.post('/video-cut-tool-back-end/send', function(req, res, next) {
 			}
 
 			if (mode == "rotate"){
+				console.log("1"+upload);
 				var RotatedvideoName = `Rotatted_video_${Date.now()}_${parseInt(Math.random() * 10000)}`;
 				rotateVideos( upload, RotatedvideoName, disableAudio, RotateValue, videoPath, (err, trimmedVideos) => {
 					var response = JSON.stringify({ 
@@ -304,9 +306,10 @@ router.post('/video-cut-tool-back-end/send', function(req, res, next) {
 						status: "Completed", 
 						videoName: 'rotate/' + RotatedvideoName + '.' + videoExtension,
 					});
-
+					console.log("2", upload);
 					if ( upload == true ) {
-						uploadFileToMediawiki(
+						console.log("Upload is going on")
+						wikiUpload.uploadFileToMediawiki(
 							"5c5c571c2aa0415d8e44c692c43422e4",
 							"72cbabf1134ad9b1c3c4cefdb363357bc18bae6d",
 							// fs.createWriteStream('rotate/' + RotatedvideoName + '.' + videoExtension),
