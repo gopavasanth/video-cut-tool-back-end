@@ -10,7 +10,6 @@ var express = require("express"),
 const http = require('http');
 var mongoose = require('mongoose');
 let ejs = require('ejs');
-var out_location = 'nothing';
 const PopupTools = require('popup-tools')
 
 var config = require('../config');
@@ -109,7 +108,7 @@ function downloadVideo(url, callback) {
 	// }, 100);
 }
 
-function trimVideos(upload, trimmedVideos, SinglevideoName, disableAudio, mode, trims, videoPath, callback) {
+function trimVideos(single_trimmed_video, upload, trimmedVideos, disableAudio, mode, trims, videoPath, callback) {
 	console.log("==Mode== " + mode)
 	console.log("===disableAudio===" + disableAudio)
 	let videoExtension = videoPath.split('.').pop().toLowerCase();
@@ -121,17 +120,17 @@ function trimVideos(upload, trimmedVideos, SinglevideoName, disableAudio, mode, 
 		trimFuncArray.push((callback) => {
 			var hash_name = 'video' + index + Date.now() + '.webm';
 			var videoName = `Trimmed_video_${Date.now()}_${parseInt(Math.random() * 10000)}`
-			var out_location = Path.join(__dirname, '/trimmed/', videoName + '.' + videoExtension);
+			// var out_location = Path.join(__dirname, '/trimmed/', videoName + '.' + videoExtension);
 			var trimmedvideoName = '/trimmed/' + videoName + '.' + videoExtension;
-			trimsLocations.push(out_location);
+			trimsLocations.push(single_trimmed_video);
 			trimmedVideos.push(trimmedvideoName);
 
-			fs.appendFile(videosListFileName, "file '" + out_location + "'\n", (err) => {
+			fs.appendFile(videosListFileName, "file '" + single_trimmed_video + "'\n", (err) => {
 				if (err) throw err;
 				if (disableAudio) {
-					var cmd = 'ffmpeg -i ' + videoPath + ' -ss ' + element.from + ' -to ' + element.to + ' -async 1 -strict 2 ' + '-an ' + out_location;
+					var cmd = 'ffmpeg -i ' + videoPath + ' -ss ' + element.from + ' -to ' + element.to + ' -async 1 -strict 2 ' + '-an ' + single_trimmed_video;
 				} else {
-					var cmd = 'ffmpeg -i ' + videoPath + ' -ss ' + element.from + ' -to ' + element.to + ' -async 1 -strict 2 ' + out_location;
+					var cmd = 'ffmpeg -i ' + videoPath + ' -ss ' + element.from + ' -to ' + element.to + ' -async 1 -strict 2 ' + single_trimmed_video;
 				}
 				console.log("Command: " + cmd);
 				exec(cmd, (error, stdout, stderr) => {
@@ -140,7 +139,7 @@ function trimVideos(upload, trimmedVideos, SinglevideoName, disableAudio, mode, 
 						console.log(`Trimminng Process error !`);
 						return callback(error);
 					}
-					console.log('trimmed single video', out_location)
+					console.log('trimmed single video', single_trimmed_video)
 					callback(null, trimmedvideoName)
 				})
 			})
@@ -152,14 +151,14 @@ function trimVideos(upload, trimmedVideos, SinglevideoName, disableAudio, mode, 
 		console.log('mode from trim', mode)
 		if (mode === "single") {
 			console.log("I got into Concataion");
-			var out_location = Path.join(__dirname, '/trimmed/', SinglevideoName + '.' + videoExtension);
-			var cmd = `ffmpeg -f concat -safe 0 -i ${videosListFileName} -c copy ${out_location}`;
+			var out_location = Path.join(__dirname, '/trimmed/', single_trimmed_video + '.' + videoExtension);
+			var cmd = `ffmpeg -f concat -safe 0 -i ${videosListFileName} -c copy ${single_trimmed_video}`;
 			exec(cmd, (err, stdout, stderr) => {
 				if (err) return callback(err);
 				trimsLocations.forEach((loc) => {
 					fs.unlink(loc, () => { });
 				})
-				return callback(null, out_location);
+				return callback(null, single_trimmed_video);
 			})
 		} else {
 			return callback(null, trimsLocations[0]);
@@ -168,13 +167,12 @@ function trimVideos(upload, trimmedVideos, SinglevideoName, disableAudio, mode, 
 
 }
 
-function rotateVideos(upload, RotatedvideoName, disableAudio, RotateValue, videoPath, callback) {
+function rotateVideos(rotated_video, upload, disableAudio, RotateValue, videoPath, callback) {
 	console.log("I'm Rotatted ");
 	const rotatesLocations = [];
 	let videoExtension = videoPath.split('.').pop().toLowerCase();
-	var out_location = Path.join(__dirname, '/rotate/', RotatedvideoName + '.' + videoExtension);
-	console.log("Out location: " + out_location)
-	rotatesLocations.push(out_location);
+	console.log("Out location: " + rotated_video)
+	rotatesLocations.push(rotated_video);
 
 	if (RotateValue == 0 || RotateValue == 1 || RotateValue == 2 || RotateValue == 3) {
 		// I'm justing changing RotateValue here and assigning to 1 as for now the 
@@ -182,9 +180,9 @@ function rotateVideos(upload, RotatedvideoName, disableAudio, RotateValue, video
 		RotateValue == '1';
 		console.log("Disable Audio: " + disableAudio)
 		if (disableAudio) {
-			var cmd = 'ffmpeg -i ' + videoPath + ' -vf "transpose=' + RotateValue + '" ' + " -an " + out_location;
+			var cmd = 'ffmpeg -i ' + videoPath + ' -vf "transpose=' + RotateValue + '" ' + " -an " + rotated_video;
 		} else {
-			var cmd = 'ffmpeg -i ' + videoPath + ' -vf "transpose=' + RotateValue + '" ' + out_location;
+			var cmd = 'ffmpeg -i ' + videoPath + ' -vf "transpose=' + RotateValue + '" ' + rotated_video;
 		}
 	}
 	console.log("Command" + cmd);
@@ -195,21 +193,21 @@ function rotateVideos(upload, RotatedvideoName, disableAudio, RotateValue, video
 	return (callback(null, rotatesLocations));
 }
 
-function cropVideos(upload, CroppedVideoName, disableAudio, req, res, videoPath, callback) {
+function cropVideos(cropped_video, upload, disableAudio, req, res, videoPath, callback) {
 	const cropsLocations = [];
 	let videoExtension = videoPath.split('.').pop().toLowerCase();
-	var out_location = Path.join(__dirname, '/cropped/' + CroppedVideoName + '.' + videoExtension);
+	// var out_location = Path.join(__dirname, '/cropped/' + CroppedVideoName + '.' + videoExtension);
 
 	var out_width = req.body.out_width;
 	var out_height = req.body.out_height;
 	var x_value = req.body.x_value;
 	var y_value = req.body.y_value;
-	cropsLocations.push(out_location);
+	cropsLocations.push(cropped_video);
 
 	if (disableAudio) {
-		var cmd = `ffmpeg -i ${videoPath} -filter:v "crop=${out_width / 100}*in_w:${out_height / 100}*in_h:${x_value / 100}*in_w:${y_value / 100}*in_h" -c:a copy -an ${out_location}`
+		var cmd = `ffmpeg -i ${videoPath} -filter:v "crop=${out_width / 100}*in_w:${out_height / 100}*in_h:${x_value / 100}*in_w:${y_value / 100}*in_h" -c:a copy -an ${cropped_video}`
 	} else {
-		var cmd = `ffmpeg -i ${videoPath} -filter:v "crop=${out_width / 100}*in_w:${out_height / 100}*in_h:${x_value / 100}*in_w:${y_value / 100}*in_h" -c:a copy ${out_location}`
+		var cmd = `ffmpeg -i ${videoPath} -filter:v "crop=${out_width / 100}*in_w:${out_height / 100}*in_h:${x_value / 100}*in_w:${y_value / 100}*in_h" -c:a copy ${cropped_video}`
 	}
 	console.log("Command" + cmd);
 	exec(cmd, (err) => {
@@ -237,35 +235,128 @@ router.post('/video-cut-tool-back-end/send', function (req, res, next) {
 	var upload = true;
 	var title = req.body.title;
 
-	console.log("New video Title: " + title)
+	// Video Settings
+	var rotateVideo = req.body.rotateVideo;
+	var trimIntoMultipleVideos = req.body.trimIntoMultipleVideos;
+	var trimIntoSingleVideo = req.body.trimIntoSingleVideo;
+	var cropVideo = req.body.cropVideo;
+	var upload = req.body.upload;
 
 	// I'm justing changing RotateValue here and assigning to 1 as for now the 
 	// the video should rotate only 90 degreee clock wise
 	let RotateValue = 1;
 
-	console.log("==Your Video Mode is == " + mode);
-	console.log("Your video upload to commons is " + upload);
-	console.log("==You Video Audio Disablity is == " + disableAudio)
+	console.log("Your Video Mode is : " + mode);
+	console.log("Your video upload to commons is : " + upload);
+	console.log("You Video Audio Disablity is : " + disableAudio);
+	console.log("Video Rotation : " + rotateVideo);
+	console.log("Video Crop : " + cropVideo);
+	console.log("Video trim into multiple videos : " + trimIntoMultipleVideos);
+	console.log("Video trim in to single video : " + trimIntoSingleVideo);
+	console.log("New video Title : " + title)
 
 	if (mode == "single" || mode == "multiple") {
 		videoSettings = "trim";
 		console.log("Hey I'm trimmed")
 	}
 
+	var out_location = Path.join(__dirname, '/new_videos/', videoName + '.' + videoExtension);
+
 	downloadVideo(url, (err, videoPath) => {
 		if (err || !videoPath || !fs.existsSync(videoPath)) {
 			console.log(err)
 			return res.status(400).send('Error downloading video');
 		}
+
+		if (rotateVideo == true) {
+			var rotated_video = out_location;
+			console.log("1" + upload);
+			// var RotatedvideoName = `Rotatted_video_${Date.now()}_${parseInt(Math.random() * 10000)}`;
+			rotateVideos(rotated_video, upload, disableAudio, RotateValue, videoPath, (err, trimmedVideos) => {
+				var response = JSON.stringify({
+					message: "Rotating Sucess",
+					status: "Completed",
+					videoName: 'rotate/' + rotated_video + '.' + videoExtension,
+				});
+				console.log("2", upload);
+				if (upload == true) {
+					console.log("Upload is going on")
+					wikiUpload.uploadFileToMediawiki(
+						user.mediawikiToken,
+						user.mediawikiSecret,
+						// fs.createWriteStream('rotate/' + RotatedvideoName + '.' + videoExtension),
+						fs.createWriteStream('/home/gopavasanth/Desktop/GSoC19/VideoCutTool-Back-End/routes/rotate/rotate_video.mp4'),
+						{
+							filename: 'Dengue fever symptoms video.' + videoExtension,
+							text: 'New Text'
+						},
+						(err, response) => {
+							if (err) {
+								console.log(err);
+								return res.status(400).send('Something went wrong while uploading the video')
+							}
+							res.send(response);
+						}
+					)
+				} else {
+					res.send(response);
+				}
+			})
+		} 
+		if (cropVideo == true) {
+			if (rotateVideo == true){
+				var cropped_video = rotated_video; 
+			} else {
+				var cropped_video = out_location;
+			}
+			// var CroppedVideoName = `Cropped_video_${Date.now()}_${parseInt(Math.random() * 10000)}`;
+			cropVideos(cropped_video, upload, disableAudio, req, res, videoPath, (err, trimmedVideos) => {
+				var response = JSON.stringify({
+					message: "Cropping Sucess",
+					status: "Completed",
+					videoName: 'cropped/' + cropped_video + '.' + videoExtension,
+				});
+				// if (false) {
+				if (upload == true) {
+					wikiUpload.uploadFileToMediawiki(
+						user.mediawikiToken,
+						user.mediawikiSecret,
+						fs.createWriteStream('cropped/' + cropped_video + '.' + videoExtension),
+						{
+							filename: 'Dengue fever symptoms video.' + videoExtension,
+							text: 'New Text'
+						},
+						(err, response) => {
+							if (err) {
+								console.log(err);
+								return res.status(400).send('Something went wrong while uploading the video')
+							}
+							res.send(response)
+						}
+					)
+				} else {
+					res.send(response);
+				}
+			})
+		}
 		
 		if (videoSettings == "trim") {
 			console.log('starting trim')
 			const trimmedVideos = [];
-			var SinglevideoName = `Concated_video_${Date.now()}_${parseInt(Math.random() * 10000)}`;
-			trimVideos(upload, trimmedVideos, SinglevideoName, disableAudio, mode, trims, videoPath, (err, trimmedVideos) => {
+			// var SinglevideoName = `Concated_video_${Date.now()}_${parseInt(Math.random() * 10000)}`;
+			if (cropVideo == true && rotateVideo == true){
+				var single_trimmed_video =  cropped_video;
+			} else if (cropVideo == true && rotateVideo != true){
+				var single_trimmed_video = cropped_video;
+			} else if (rotateVideo == true && cropVideo != true){
+				var single_trimmed_video = rotated_video
+			} else {
+				var single_trimmed_video = out_location;
+			}
+			trimVideos(single_trimmed_video, upload, trimmedVideos, disableAudio, mode, trims, videoPath, (err, trimmedVideos) => {
 				console.log('done trimming')
 
-				if (mode === "multiple") {
+				if (trimIntoMultipleVideos === true) {
 					var response = JSON.stringify({
 						message: "Trimming Sucess",
 						status: "Completed"
@@ -296,7 +387,7 @@ router.post('/video-cut-tool-back-end/send', function (req, res, next) {
 					} else {
 						res.send(response);
 					}
-				} else if (mode === "single") {
+				} else if (trimIntoSingleVideo === true) {
 					var response = JSON.stringify({
 						message: "Trimming Sucess",
 						status: "Completed",
@@ -325,70 +416,7 @@ router.post('/video-cut-tool-back-end/send', function (req, res, next) {
 					}
 				}
 			})
-		} else if (mode == "rotate") {
-			console.log("1" + upload);
-			var RotatedvideoName = `Rotatted_video_${Date.now()}_${parseInt(Math.random() * 10000)}`;
-			rotateVideos(upload, RotatedvideoName, disableAudio, RotateValue, videoPath, (err, trimmedVideos) => {
-				var response = JSON.stringify({
-					message: "Rotating Sucess",
-					status: "Completed",
-					videoName: 'rotate/' + RotatedvideoName + '.' + videoExtension,
-				});
-				console.log("2", upload);
-				if (upload == true) {
-					console.log("Upload is going on")
-					wikiUpload.uploadFileToMediawiki(
-						user.mediawikiToken,
-						user.mediawikiSecret,
-						// fs.createWriteStream('rotate/' + RotatedvideoName + '.' + videoExtension),
-						fs.createWriteStream('/home/gopavasanth/Desktop/GSoC19/VideoCutTool-Back-End/routes/rotate/rotate_video.mp4'),
-						{
-							filename: 'Dengue fever symptoms video.' + videoExtension,
-							text: 'New Text'
-						},
-						(err, response) => {
-							if (err) {
-								console.log(err);
-								return res.status(400).send('Something went wrong while uploading the video')
-							}
-							res.send(response);
-						}
-					)
-				} else {
-					res.send(response);
-				}
-			})
-		} else if (mode == "crop") {
-			var CroppedVideoName = `Cropped_video_${Date.now()}_${parseInt(Math.random() * 10000)}`;
-			cropVideos(upload, CroppedVideoName, disableAudio, req, res, videoPath, (err, trimmedVideos) => {
-				var response = JSON.stringify({
-					message: "Cropping Sucess",
-					status: "Completed",
-					videoName: 'cropped/' + CroppedVideoName + '.' + videoExtension,
-				});
-				// if (false) {
-				if (upload == true) {
-					wikiUpload.uploadFileToMediawiki(
-						user.mediawikiToken,
-						user.mediawikiSecret,
-						fs.createWriteStream('cropped/' + CroppedVideoName + '.' + videoExtension),
-						{
-							filename: 'Dengue fever symptoms video.' + videoExtension,
-							text: 'New Text'
-						},
-						(err, response) => {
-							if (err) {
-								console.log(err);
-								return res.status(400).send('Something went wrong while uploading the video')
-							}
-							res.send(response)
-						}
-					)
-				} else {
-					res.send(response);
-				}
-			})
-		}
+		} 
 	})
 });
 
