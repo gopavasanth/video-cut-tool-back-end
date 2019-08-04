@@ -235,6 +235,9 @@ router.post('/video-cut-tool-back-end/send', function (req, res, next) {
 	var videoPath = Path.join(__dirname, '/videos/', videoName + '.' + videoExtension);
 	var videoSettings;
 	var upload = true;
+	var title = req.body.title;
+
+	console.log("New video Title: " + title)
 
 	// I'm justing changing RotateValue here and assigning to 1 as for now the 
 	// the video should rotate only 90 degreee clock wise
@@ -254,7 +257,7 @@ router.post('/video-cut-tool-back-end/send', function (req, res, next) {
 			console.log(err)
 			return res.status(400).send('Error downloading video');
 		}
-
+		
 		if (videoSettings == "trim") {
 			console.log('starting trim')
 			const trimmedVideos = [];
