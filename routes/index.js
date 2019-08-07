@@ -11,6 +11,7 @@ const http = require('http');
 var mongoose = require('mongoose');
 let ejs = require('ejs');
 const PopupTools = require('popup-tools')
+const utils = require('./utils');
 
 var config = require('../config');
 const OAuth = require('oauth-1.0a');
@@ -93,154 +94,6 @@ router.get('/video-cut-tool-back-end', function (req, res, next) {
 	});
 });
 
-function deleteFiles(files) {
-	files.forEach((file) => {
-		fs.unlink(file, () => { });
-	})
-}
-
-function downloadVideo(url, callback) {
-	let videoExtension = url.split('.').pop().toLowerCase();
-	var videoDownloadPath = Path.join(__dirname, '/videos/', `video_${Date.now()}_${parseInt(Math.random() * 10000)}` + '.' + videoExtension);
-	const writer = fs.createWriteStream(videoDownloadPath);
-	var cmd = ("truncate -s 0 myfile; ffmpeg -y -i " + url + " -vcodec copy -acodec copy " + videoDownloadPath);
-	exec(cmd, (err) => {
-		if (err) return callback(err);
-		console.log("downloading success")
-		return callback(null, videoDownloadPath);
-	})
-	// setTimeout(() => {
-	// 	callback(null, Path.join(__dirname, '/videos/', 'video_1565168938329_2992.webm'))
-	// }, 100);
-}
-
-function trimVideos(videoPath, trims, mode, callback) {
-	const trimFuncArray = [];
-	const trimsLocations = [];
-	const videoExtension = videoPath.split('.').pop().toLowerCase();
-	// A list to concat the videos in
-	const videosListFileName = Path.join(__dirname, `filelist-${Date.now()}`);
-
-	trims.forEach((element, index) => {
-		trimFuncArray.push((callback) => {
-			const videoLocation = Path.join(__dirname, `trimmed-video-${Date.now()}.${videoExtension}`);
-			trimsLocations.push(videoLocation);
-			var cmd = 'ffmpeg -i ' + videoPath + ' -ss ' + element.from + ' -to ' + element.to + ' -async 1 -strict 2 ' + videoLocation;
-			console.log("Command: " + cmd);
-			exec(cmd, (error, stdout, stderr) => {
-				if (error !== null) {
-					console.log(error)
-					console.log(`Trimminng Process error !`);
-					return callback(error);
-				}
-				// console.log('trimmed single video', single_trimmed_video)
-				callback(null, videoLocation);
-			})
-		})
-
-	})
-
-	async.series(trimFuncArray, () => {
-		console.log('mode from trim', mode)
-		return callback(null, trimsLocations);
-	})
-
-}
-
-function concatVideos(videoPaths, callback) {
-	const videosListFileName = Path.join(__dirname, `filelist-${Date.now()}`);
-	videoPaths.forEach((videoLocation) => {
-		fs.appendFileSync(videosListFileName, "file '" + videoLocation + "'\n");
-	})
-
-	const concatedLocation = Path.join(__dirname, `concated-video-${Date.now()}.${videoPaths[0].split('.').pop()}`);
-	var cmd = `ffmpeg -f concat -safe 0 -i ${videosListFileName} -c copy ${concatedLocation}`;
-	exec(cmd, (err, stdout, stderr) => {
-		fs.unlink(videosListFileName, () => { });
-		if (err) return callback(err);
-		return callback(null, concatedLocation);
-	})
-}
-
-function rotateVideos(videosPaths, RotateValue, callback) {
-	console.log("I'm Rotatted ");
-	const rotatesLocations = [];
-	const rotateFuncArray = [];
-
-	videosPaths.forEach((videoPath) => {
-		rotateFuncArray.push((cb) => {
-			const videoExtension = videoPath.split('.').pop().toLowerCase();
-			const rotatedLocation = Path.join(__dirname, `rotated-video-${Date.now()}.${videoExtension}`);
-			rotatesLocations.push(rotatedLocation);
-			if (RotateValue == 0 || RotateValue == 1 || RotateValue == 2 || RotateValue == 3) {
-				// I'm justing changing RotateValue here and assigning to 1 as for now the 
-				// the video should rotate only 90 degreee clock wise
-				RotateValue == '1';
-				var cmd = 'ffmpeg -i ' + videoPath + ' -vf "transpose=' + RotateValue + '" ' + rotatedLocation;
-			}
-			console.log("Command" + cmd);
-			exec(cmd, (err) => {
-				if (err) return cb(err);
-				console.log("Rotating success")
-				return cb(null);
-			})
-		})
-	})
-
-	async.series(rotateFuncArray, (err) => {
-		if (err) return callback(err);
-		return callback(null, rotatesLocations);
-	})
-}
-
-function cropVideos(videosPaths, out_width, out_height, x_value, y_value, callback) {
-	const cropsLocations = [];
-	const cropsFuncArray = [];
-	videosPaths.forEach((videoPath) => {
-		cropsFuncArray.push((cb) => {
-			const videoExtension = videoPath.split('.').pop().toLowerCase();
-			const croppedLocation = Path.join(__dirname, `cropped-video-${Date.now()}.${videoExtension}`);
-			cropsLocations.push(croppedLocation);
-
-			var cmd = `ffmpeg -i ${videoPath} -filter:v "crop=${out_width / 100}*in_w:${out_height / 100}*in_h:${x_value / 100}*in_w:${y_value / 100}*in_h" -c:a copy ${croppedLocation}`
-			console.log("Command" + cmd);
-			exec(cmd, (err) => {
-				if (err) return cb(err);
-				console.log("Cropping success")
-				return cb(null);
-			})
-		})
-
-	})
-
-	async.series(cropsFuncArray, (err) => {
-		if (err) return callback(err);
-		return callback(null, cropsLocations);
-	})
-
-}
-
-function removeAudioFromVideos(videosPaths, callback) {
-	const removeAudioFunc = [];
-	const clearedLocations = [];
-	videosPaths.forEach((videoPath) => {
-		removeAudioFunc.push((cb) => {
-			const videoExtension = videoPath.split('.').pop().toLowerCase();
-			const clearedLocation = Path.join(__dirname, `cleared-video-${Date.now()}.${videoExtension}`);
-			clearedLocations.push(clearedLocation);
-			const cmd = `ffmpeg -i ${videoPath} -an ${clearedLocation}`;
-			exec(cmd, (err) => {
-				if (err) return cb(err);
-				return cb();
-			})
-		})
-	})
-	async.series(removeAudioFunc, (err) => {
-		if (err) return callback(err);
-		return callback(null, clearedLocations);
-	})
-}
-
 router.post('/video-cut-tool-back-end/send', function (req, res, next) {
 	console.log('Hit Send')
 	const disableAudio = req.body.disableAudio;
@@ -284,8 +137,6 @@ router.post('/video-cut-tool-back-end/send', function (req, res, next) {
 		console.log("Hey I'm trimmed")
 	}
 
-	var out_location = Path.join(__dirname, '/new_videos/', videoName + '.' + videoExtension);
-	const tmpFiles = [];
 	downloadVideo(url, (err, videoPath) => {
 		if (err || !videoPath || !fs.existsSync(videoPath)) {
 			console.log(err)
@@ -297,8 +148,8 @@ router.post('/video-cut-tool-back-end/send', function (req, res, next) {
 		if (videoSettings === 'trim') {
 			processFuncArray.push((cb) => {
 				console.log('trimming')
-				trimVideos(videoPath, trims, mode, (err, videosLocation) => {
-					// deleteFiles([videoPath]);
+				utils.trimVideos(videoPath, trims, mode, (err, videosLocation) => {
+					utils.deleteFiles([videoPath]);
 					if (err) return cb(err);
 					return cb(null, videosLocation);
 				})
@@ -313,8 +164,8 @@ router.post('/video-cut-tool-back-end/send', function (req, res, next) {
 		}
 		if (rotateVideo) {
 			processFuncArray.push((videoPaths, cb) => {
-				rotateVideos(videoPaths, RotateValue, (err, rotatedVideos) => {
-					deleteFiles(videoPaths);
+				utils.rotateVideos(videoPaths, RotateValue, (err, rotatedVideos) => {
+					utils.deleteFiles(videoPaths);
 					if (err) return cb(err);
 					return cb(null, rotatedVideos);
 				})
@@ -323,8 +174,8 @@ router.post('/video-cut-tool-back-end/send', function (req, res, next) {
 		if (cropVideo) {
 			processFuncArray.push((videoPaths, cb) => {
 				console.log('cropping')
-				cropVideos(videoPaths, out_width, out_height, x_value, y_value, (err, croppedPaths) => {
-					deleteFiles(videoPaths);
+				utils.cropVideos(videoPaths, out_width, out_height, x_value, y_value, (err, croppedPaths) => {
+					utils.deleteFiles(videoPaths);
 					if (err) return cb(err);
 					return cb(null, croppedPaths)
 				})
@@ -332,8 +183,8 @@ router.post('/video-cut-tool-back-end/send', function (req, res, next) {
 		}
 		if (mode === "single" && trims.length > 1) {
 			processFuncArray.push((videoPaths, cb) => {
-				concatVideos(videoPaths, (err, concatedPath) => {
-					deleteFiles(videoPaths);
+				utils.concatVideos(videoPaths, (err, concatedPath) => {
+					utils.deleteFiles(videoPaths);
 					if (err) return cb(err);
 					return cb(null, [concatedPath]);
 				})
@@ -342,8 +193,8 @@ router.post('/video-cut-tool-back-end/send', function (req, res, next) {
 		if (disableAudio) {
 			processFuncArray.push((videoPaths, cb) => {
 				console.log('remove audio')
-				removeAudioFromVideos(videoPaths, (err, clearedPaths) => {
-					deleteFiles(videoPaths);
+				utils.removeAudioFromVideos(videoPaths, (err, clearedPaths) => {
+					utils.deleteFiles(videoPaths);
 					if (err) return cb(err);
 					return cb(null, clearedPaths);
 				})
@@ -352,7 +203,10 @@ router.post('/video-cut-tool-back-end/send', function (req, res, next) {
 		async.waterfall(processFuncArray, (err, result) => {
 			console.log(err, result)
 			console.log('=================== result ==================');
-			return res.json({ videos: result });
+			utils.moveVideosToPublic(result, (err, newPaths) => {
+				if (err) return res.status(400).send('something went wrong');
+				return res.json({ videos: newPaths.map((p) => p.split('public/').pop())});
+			})
 			// if (!upload || result.length > 1) {
 			// 	return res.json({ videos: result });
 			// }
