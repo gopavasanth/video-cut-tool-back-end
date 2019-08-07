@@ -60,18 +60,18 @@ function deleteFiles(files) {
 }
 
 function downloadVideo(url, callback) {
-	// let videoExtension = url.split('.').pop().toLowerCase();
-	// var videoDownloadPath = path.join(__dirname, '/videos/', `video_${Date.now()}_${parseInt(Math.random() * 10000)}` + '.' + videoExtension);
-	// const writer = fs.createWriteStream(videoDownloadPath);
-	// var cmd = ("truncate -s 0 myfile; ffmpeg -y -i " + url + " -vcodec copy -acodec copy " + videoDownloadPath);
-	// exec(cmd, (err) => {
-	// 	if (err) return callback(err);
-	// 	console.log("downloading success")
-	// 	return callback(null, videoDownloadPath);
-	// })
-	setTimeout(() => {
-		callback(null, path.join(__dirname, '/videos/', 'video_1565168938329_2992.webm'))
-	}, 100);
+	let videoExtension = url.split('.').pop().toLowerCase();
+	var videoDownloadPath = path.join(__dirname, '/videos/', `video_${Date.now()}_${parseInt(Math.random() * 10000)}` + '.' + videoExtension);
+	const writer = fs.createWriteStream(videoDownloadPath);
+	var cmd = ("truncate -s 0 myfile; ffmpeg -y -i " + url + " -vcodec copy -acodec copy " + videoDownloadPath);
+	exec(cmd, (err) => {
+		if (err) return callback(err);
+		console.log("downloading success")
+		return callback(null, videoDownloadPath);
+	})
+	// setTimeout(() => {
+	// 	callback(null, path.join(__dirname, '/videos/', 'video_1565168938329_2992.webm'))
+	// }, 100);
 }
 
 function trimVideos(videoPath, trims, mode, callback) {
