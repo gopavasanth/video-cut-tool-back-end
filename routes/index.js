@@ -93,55 +93,48 @@ router.get('/video-cut-tool-back-end', function (req, res, next) {
 	});
 });
 
+function deleteFiles(files) {
+	files.forEach((file) => {
+		fs.unlink(file, () => { });
+	})
+}
+
 function downloadVideo(url, callback) {
-	  let videoExtension = url.split('.').pop().toLowerCase();
-	  var videoDownloadPath = Path.join(__dirname, '/videos/', `video_${Date.now()}_${parseInt(Math.random() * 10000)}`+ '.'+ videoExtension);
-	  const writer = fs.createWriteStream(videoDownloadPath);
-	  var cmd=("truncate -s 0 myfile; ffmpeg -y -i " +  url + " -vcodec copy -acodec copy " + videoDownloadPath);
-	  exec(cmd, (err) => {
-	      if (err) return callback(err);
-	      console.log("downloading success")
-	      return callback(null, videoDownloadPath);
-	  })
+	let videoExtension = url.split('.').pop().toLowerCase();
+	var videoDownloadPath = Path.join(__dirname, '/videos/', `video_${Date.now()}_${parseInt(Math.random() * 10000)}` + '.' + videoExtension);
+	const writer = fs.createWriteStream(videoDownloadPath);
+	var cmd = ("truncate -s 0 myfile; ffmpeg -y -i " + url + " -vcodec copy -acodec copy " + videoDownloadPath);
+	exec(cmd, (err) => {
+		if (err) return callback(err);
+		console.log("downloading success")
+		return callback(null, videoDownloadPath);
+	})
 	// setTimeout(() => {
-	// 	callback(null, Path.join(__dirname, '/videos/', 'video_1564869357637_6257.webm'))
+	// 	callback(null, Path.join(__dirname, '/videos/', 'video_1565168938329_2992.webm'))
 	// }, 100);
 }
 
-function trimVideos(single_trimmed_video, upload, trimmedVideos, disableAudio, mode, trims, videoPath, callback) {
-	console.log("==Mode== " + mode)
-	console.log("===disableAudio===" + disableAudio)
-	let videoExtension = videoPath.split('.').pop().toLowerCase();
+function trimVideos(videoPath, trims, mode, callback) {
 	const trimFuncArray = [];
 	const trimsLocations = [];
+	const videoExtension = videoPath.split('.').pop().toLowerCase();
+	// A list to concat the videos in
 	const videosListFileName = Path.join(__dirname, `filelist-${Date.now()}`);
 
 	trims.forEach((element, index) => {
 		trimFuncArray.push((callback) => {
-			var hash_name = 'video' + index + Date.now() + '.webm';
-			var videoName = `Trimmed_video_${Date.now()}_${parseInt(Math.random() * 10000)}`
-			// var out_location = Path.join(__dirname, '/trimmed/', videoName + '.' + videoExtension);
-			var trimmedvideoName = '/trimmed/' + videoName + '.' + videoExtension;
-			trimsLocations.push(single_trimmed_video);
-			trimmedVideos.push(trimmedvideoName);
-
-			fs.appendFile(videosListFileName, "file '" + single_trimmed_video + "'\n", (err) => {
-				if (err) throw err;
-				if (disableAudio) {
-					var cmd = 'ffmpeg -i ' + videoPath + ' -ss ' + element.from + ' -to ' + element.to + ' -async 1 -strict 2 ' + '-an ' + single_trimmed_video;
-				} else {
-					var cmd = 'ffmpeg -i ' + videoPath + ' -ss ' + element.from + ' -to ' + element.to + ' -async 1 -strict 2 ' + single_trimmed_video;
+			const videoLocation = Path.join(__dirname, `trimmed-video-${Date.now()}.${videoExtension}`);
+			trimsLocations.push(videoLocation);
+			var cmd = 'ffmpeg -i ' + videoPath + ' -ss ' + element.from + ' -to ' + element.to + ' -async 1 -strict 2 ' + videoLocation;
+			console.log("Command: " + cmd);
+			exec(cmd, (error, stdout, stderr) => {
+				if (error !== null) {
+					console.log(error)
+					console.log(`Trimminng Process error !`);
+					return callback(error);
 				}
-				console.log("Command: " + cmd);
-				exec(cmd, (error, stdout, stderr) => {
-					if (error !== null) {
-						console.log(error)
-						console.log(`Trimminng Process error !`);
-						return callback(error);
-					}
-					console.log('trimmed single video', single_trimmed_video)
-					callback(null, trimmedvideoName)
-				})
+				// console.log('trimmed single video', single_trimmed_video)
+				callback(null, videoLocation);
 			})
 		})
 
@@ -149,71 +142,102 @@ function trimVideos(single_trimmed_video, upload, trimmedVideos, disableAudio, m
 
 	async.series(trimFuncArray, () => {
 		console.log('mode from trim', mode)
-		if (mode === "single") {
-			console.log("I got into Concataion");
-			var out_location = Path.join(__dirname, '/trimmed/', single_trimmed_video + '.' + videoExtension);
-			var cmd = `ffmpeg -f concat -safe 0 -i ${videosListFileName} -c copy ${single_trimmed_video}`;
-			exec(cmd, (err, stdout, stderr) => {
-				if (err) return callback(err);
-				trimsLocations.forEach((loc) => {
-					fs.unlink(loc, () => { });
-				})
-				return callback(null, single_trimmed_video);
-			})
-		} else {
-			return callback(null, trimsLocations[0]);
-		}
+		return callback(null, trimsLocations);
 	})
 
 }
 
-function rotateVideos(rotated_video, upload, disableAudio, RotateValue, videoPath, callback) {
+function concatVideos(videoPaths, callback) {
+	const videosListFileName = Path.join(__dirname, `filelist-${Date.now()}`);
+	videoPaths.forEach((videoLocation) => {
+		fs.appendFileSync(videosListFileName, "file '" + videoLocation + "'\n");
+	})
+
+	const concatedLocation = Path.join(__dirname, `concated-video-${Date.now()}.${videoPaths[0].split('.').pop()}`);
+	var cmd = `ffmpeg -f concat -safe 0 -i ${videosListFileName} -c copy ${concatedLocation}`;
+	exec(cmd, (err, stdout, stderr) => {
+		fs.unlink(videosListFileName, () => { });
+		if (err) return callback(err);
+		return callback(null, concatedLocation);
+	})
+}
+
+function rotateVideos(videosPaths, RotateValue, callback) {
 	console.log("I'm Rotatted ");
 	const rotatesLocations = [];
-	let videoExtension = videoPath.split('.').pop().toLowerCase();
-	console.log("Out location: " + rotated_video)
-	rotatesLocations.push(rotated_video);
+	const rotateFuncArray = [];
 
-	if (RotateValue == 0 || RotateValue == 1 || RotateValue == 2 || RotateValue == 3) {
-		// I'm justing changing RotateValue here and assigning to 1 as for now the 
-		// the video should rotate only 90 degreee clock wise
-		RotateValue == '1';
-		console.log("Disable Audio: " + disableAudio)
-		if (disableAudio) {
-			var cmd = 'ffmpeg -i ' + videoPath + ' -vf "transpose=' + RotateValue + '" ' + " -an " + rotated_video;
-		} else {
-			var cmd = 'ffmpeg -i ' + videoPath + ' -vf "transpose=' + RotateValue + '" ' + rotated_video;
-		}
-	}
-	console.log("Command" + cmd);
-	exec(cmd, (err) => {
-		if (err) return callback(err);
-		console.log("Rotating success")
+	videosPaths.forEach((videoPath) => {
+		rotateFuncArray.push((cb) => {
+			const videoExtension = videoPath.split('.').pop().toLowerCase();
+			const rotatedLocation = Path.join(__dirname, `rotated-video-${Date.now()}.${videoExtension}`);
+			rotatesLocations.push(rotatedLocation);
+			if (RotateValue == 0 || RotateValue == 1 || RotateValue == 2 || RotateValue == 3) {
+				// I'm justing changing RotateValue here and assigning to 1 as for now the 
+				// the video should rotate only 90 degreee clock wise
+				RotateValue == '1';
+				var cmd = 'ffmpeg -i ' + videoPath + ' -vf "transpose=' + RotateValue + '" ' + rotatedLocation;
+			}
+			console.log("Command" + cmd);
+			exec(cmd, (err) => {
+				if (err) return cb(err);
+				console.log("Rotating success")
+				return cb(null);
+			})
+		})
 	})
-	return (callback(null, rotatesLocations));
+
+	async.series(rotateFuncArray, (err) => {
+		if (err) return callback(err);
+		return callback(null, rotatesLocations);
+	})
 }
 
-function cropVideos(cropped_video, upload, disableAudio, req, res, videoPath, callback) {
+function cropVideos(videosPaths, out_width, out_height, x_value, y_value, callback) {
 	const cropsLocations = [];
-	let videoExtension = videoPath.split('.').pop().toLowerCase();
-	// var out_location = Path.join(__dirname, '/cropped/' + CroppedVideoName + '.' + videoExtension);
+	const cropsFuncArray = [];
+	videosPaths.forEach((videoPath) => {
+		cropsFuncArray.push((cb) => {
+			const videoExtension = videoPath.split('.').pop().toLowerCase();
+			const croppedLocation = Path.join(__dirname, `cropped-video-${Date.now()}.${videoExtension}`);
+			cropsLocations.push(croppedLocation);
 
-	var out_width = req.body.out_width;
-	var out_height = req.body.out_height;
-	var x_value = req.body.x_value;
-	var y_value = req.body.y_value;
-	cropsLocations.push(cropped_video);
+			var cmd = `ffmpeg -i ${videoPath} -filter:v "crop=${out_width / 100}*in_w:${out_height / 100}*in_h:${x_value / 100}*in_w:${y_value / 100}*in_h" -c:a copy ${croppedLocation}`
+			console.log("Command" + cmd);
+			exec(cmd, (err) => {
+				if (err) return cb(err);
+				console.log("Cropping success")
+				return cb(null);
+			})
+		})
 
-	if (disableAudio) {
-		var cmd = `ffmpeg -i ${videoPath} -filter:v "crop=${out_width / 100}*in_w:${out_height / 100}*in_h:${x_value / 100}*in_w:${y_value / 100}*in_h" -c:a copy -an ${cropped_video}`
-	} else {
-		var cmd = `ffmpeg -i ${videoPath} -filter:v "crop=${out_width / 100}*in_w:${out_height / 100}*in_h:${x_value / 100}*in_w:${y_value / 100}*in_h" -c:a copy ${cropped_video}`
-	}
-	console.log("Command" + cmd);
-	exec(cmd, (err) => {
+	})
+
+	async.series(cropsFuncArray, (err) => {
 		if (err) return callback(err);
-		console.log("Cropping success")
 		return callback(null, cropsLocations);
+	})
+
+}
+
+function removeAudioFromVideos(videosPaths, callback) {
+	const removeAudioFunc = [];
+	const clearedLocations = [];
+	videosPaths.forEach((videoPath) => {
+		removeAudioFunc.push((cb) => {
+			const videoExtension = videoPath.split('.').pop().toLowerCase();
+			const clearedLocation = Path.join(__dirname, `cleared-video-${Date.now()}.${videoExtension}`);
+			clearedLocations.push(clearedLocation);
+			const cmd = `ffmpeg -i ${videoPath} -an ${clearedLocation}`;
+			exec(cmd, (err) => {
+				if (err) return cb(err);
+				return cb();
+			})
+		})
+	})
+	async.series(removeAudioFunc, (err) => {
+		if (err) return callback(err);
+		return callback(null, clearedLocations);
 	})
 }
 
@@ -261,162 +285,95 @@ router.post('/video-cut-tool-back-end/send', function (req, res, next) {
 	}
 
 	var out_location = Path.join(__dirname, '/new_videos/', videoName + '.' + videoExtension);
-
+	const tmpFiles = [];
 	downloadVideo(url, (err, videoPath) => {
 		if (err || !videoPath || !fs.existsSync(videoPath)) {
 			console.log(err)
 			return res.status(400).send('Error downloading video');
 		}
+		const processFuncArray = [];
+		// Initialize video path with the downloaded path
 
-		if (rotateVideo == true) {
-			var rotated_video = out_location;
-			console.log("1" + upload);
-			// var RotatedvideoName = `Rotatted_video_${Date.now()}_${parseInt(Math.random() * 10000)}`;
-			rotateVideos(rotated_video, upload, disableAudio, RotateValue, videoPath, (err, trimmedVideos) => {
-				var response = JSON.stringify({
-					message: "Rotating Sucess",
-					status: "Completed",
-					videoName: 'rotate/' + rotated_video + '.' + videoExtension,
-				});
-				console.log("2", upload);
-				if (upload == true) {
-					console.log("Upload is going on")
-					wikiUpload.uploadFileToMediawiki(
-						user.mediawikiToken,
-						user.mediawikiSecret,
-						// fs.createWriteStream('rotate/' + RotatedvideoName + '.' + videoExtension),
-						fs.createWriteStream('/home/gopavasanth/Desktop/GSoC19/VideoCutTool-Back-End/routes/rotate/rotate_video.mp4'),
-						{
-							filename: 'Dengue fever symptoms video.' + videoExtension,
-							text: 'New Text'
-						},
-						(err, response) => {
-							if (err) {
-								console.log(err);
-								return res.status(400).send('Something went wrong while uploading the video')
-							}
-							res.send(response);
-						}
-					)
-				} else {
-					res.send(response);
-				}
+		if (videoSettings === 'trim') {
+			processFuncArray.push((cb) => {
+				console.log('trimming')
+				trimVideos(videoPath, trims, mode, (err, videosLocation) => {
+					// deleteFiles([videoPath]);
+					if (err) return cb(err);
+					return cb(null, videosLocation);
+				})
 			})
-		} 
-		if (cropVideo == true) {
-			if (rotateVideo == true){
-				var cropped_video = rotated_video; 
-			} else {
-				var cropped_video = out_location;
-			}
-			// var CroppedVideoName = `Cropped_video_${Date.now()}_${parseInt(Math.random() * 10000)}`;
-			cropVideos(cropped_video, upload, disableAudio, req, res, videoPath, (err, trimmedVideos) => {
-				var response = JSON.stringify({
-					message: "Cropping Sucess",
-					status: "Completed",
-					videoName: 'cropped/' + cropped_video + '.' + videoExtension,
-				});
-				// if (false) {
-				if (upload == true) {
-					wikiUpload.uploadFileToMediawiki(
-						user.mediawikiToken,
-						user.mediawikiSecret,
-						fs.createWriteStream('cropped/' + cropped_video + '.' + videoExtension),
-						{
-							filename: 'Dengue fever symptoms video.' + videoExtension,
-							text: 'New Text'
-						},
-						(err, response) => {
-							if (err) {
-								console.log(err);
-								return res.status(400).send('Something went wrong while uploading the video')
-							}
-							res.send(response)
-						}
-					)
-				} else {
-					res.send(response);
-				}
+		} else {
+			// Just map to an array of paths
+			processFuncArray.push((cb) => {
+				setTimeout(() => {
+					return cb(null, [videoPath]);
+				}, 100);
 			})
 		}
-		
-		if (videoSettings == "trim") {
-			console.log('starting trim')
-			const trimmedVideos = [];
-			// var SinglevideoName = `Concated_video_${Date.now()}_${parseInt(Math.random() * 10000)}`;
-			if (cropVideo == true && rotateVideo == true){
-				var single_trimmed_video =  cropped_video;
-			} else if (cropVideo == true && rotateVideo != true){
-				var single_trimmed_video = cropped_video;
-			} else if (rotateVideo == true && cropVideo != true){
-				var single_trimmed_video = rotated_video
-			} else {
-				var single_trimmed_video = out_location;
-			}
-			trimVideos(single_trimmed_video, upload, trimmedVideos, disableAudio, mode, trims, videoPath, (err, trimmedVideos) => {
-				console.log('done trimming')
-
-				if (trimIntoMultipleVideos === true) {
-					var response = JSON.stringify({
-						message: "Trimming Sucess",
-						status: "Completed"
-					});
-					console.log("Response: " + response);
-					// console.log("Hello");
-					// console.log("===Trim Locations==: " + trimmedVideos);
-
-					// if (false) {
-					if (upload == true) {
-						console.log('starting upload')
-						wikiUpload.uploadFileToMediawiki(
-							user.mediawikiToken,
-							user.mediawikiSecret,
-							fs.createReadStream(videoPath),
-							{
-								filename: 'Dengue fever symptoms video.' + videoExtension,
-								text: 'New Text'
-							},
-							(err, response) => {
-								if (err) {
-									console.log(err);
-									return res.status(400).send('Something went wrong while uploading the video')
-								}
-								res.send(response);
-							}
-						)
-					} else {
-						res.send(response);
-					}
-				} else if (trimIntoSingleVideo === true) {
-					var response = JSON.stringify({
-						message: "Trimming Sucess",
-						status: "Completed",
-						videoName: videoPath,
-					});
-					// if (false) {
-					if (upload == true) {
-						wikiUpload.uploadFileToMediawiki(
-							user.mediawikiToken,
-							user.mediawikiSecret,
-							fs.createReadStream(videoPath),
-							{
-								filename: 'Dengue fever symptoms video.' + videoExtension,
-								text: 'New Text'
-							},
-							(err, response) => {
-								if (err) {
-									console.log(err);
-									return res.status(400).send('Something went wrong while uploading the video')
-								}
-								res.send(response);
-							}
-						)
-					} else {
-						res.send(response);
-					}
-				}
+		if (rotateVideo) {
+			processFuncArray.push((videoPaths, cb) => {
+				rotateVideos(videoPaths, RotateValue, (err, rotatedVideos) => {
+					deleteFiles(videoPaths);
+					if (err) return cb(err);
+					return cb(null, rotatedVideos);
+				})
 			})
-		} 
+		}
+		if (cropVideo) {
+			processFuncArray.push((videoPaths, cb) => {
+				console.log('cropping')
+				cropVideos(videoPaths, out_width, out_height, x_value, y_value, (err, croppedPaths) => {
+					deleteFiles(videoPaths);
+					if (err) return cb(err);
+					return cb(null, croppedPaths)
+				})
+			})
+		}
+		if (mode === "single" && trims.length > 1) {
+			processFuncArray.push((videoPaths, cb) => {
+				concatVideos(videoPaths, (err, concatedPath) => {
+					deleteFiles(videoPaths);
+					if (err) return cb(err);
+					return cb(null, [concatedPath]);
+				})
+			})
+		}
+		if (disableAudio) {
+			processFuncArray.push((videoPaths, cb) => {
+				console.log('remove audio')
+				removeAudioFromVideos(videoPaths, (err, clearedPaths) => {
+					deleteFiles(videoPaths);
+					if (err) return cb(err);
+					return cb(null, clearedPaths);
+				})
+			})
+		}
+		async.waterfall(processFuncArray, (err, result) => {
+			console.log(err, result)
+			console.log('=================== result ==================');
+			return res.json({ videos: result });
+			// if (!upload || result.length > 1) {
+			// 	return res.json({ videos: result });
+			// }
+			// wikiUpload.uploadFileToMediawiki(
+			// 	user.mediawikiToken,
+			// 	user.mediawikiSecret,
+			// 	// fs.createWriteStream('rotate/' + RotatedvideoName + '.' + videoExtension),
+			// 	fs.createReadStream(result[0]),
+			// 	{
+			// 		filename: title,
+			// 		// text: 'New Text'
+			// 	},
+			// 	(err, response) => {
+			// 		if (err) {
+			// 			console.log(err);
+			// 			return res.status(400).send('Something went wrong while uploading the video')
+			// 		}
+			// 		res.send(response);
+			// 	}
+			// )
+		})
 	})
 });
 
