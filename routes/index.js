@@ -137,7 +137,7 @@ router.post('/video-cut-tool-back-end/send', function (req, res, next) {
 		console.log("Hey I'm trimmed")
 	}
 
-	downloadVideo(url, (err, videoPath) => {
+	utils.downloadVideo(url, (err, videoPath) => {
 		if (err || !videoPath || !fs.existsSync(videoPath)) {
 			console.log(err)
 			return res.status(400).send('Error downloading video');

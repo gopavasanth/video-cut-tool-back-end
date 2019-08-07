@@ -2,6 +2,8 @@ const fs = require('fs');
 const path = require('path');
 const async = require('async');
 
+const { exec } = require('child_process');
+
 function move(oldPath, newPath, callback) {
 
     fs.rename(oldPath, newPath, function (err) {
@@ -59,7 +61,7 @@ function deleteFiles(files) {
 
 function downloadVideo(url, callback) {
 	// let videoExtension = url.split('.').pop().toLowerCase();
-	// var videoDownloadPath = Path.join(__dirname, '/videos/', `video_${Date.now()}_${parseInt(Math.random() * 10000)}` + '.' + videoExtension);
+	// var videoDownloadPath = path.join(__dirname, '/videos/', `video_${Date.now()}_${parseInt(Math.random() * 10000)}` + '.' + videoExtension);
 	// const writer = fs.createWriteStream(videoDownloadPath);
 	// var cmd = ("truncate -s 0 myfile; ffmpeg -y -i " + url + " -vcodec copy -acodec copy " + videoDownloadPath);
 	// exec(cmd, (err) => {
@@ -68,7 +70,7 @@ function downloadVideo(url, callback) {
 	// 	return callback(null, videoDownloadPath);
 	// })
 	setTimeout(() => {
-		callback(null, Path.join(__dirname, '/videos/', 'video_1565168938329_2992.webm'))
+		callback(null, path.join(__dirname, '/videos/', 'video_1565168938329_2992.webm'))
 	}, 100);
 }
 
@@ -77,11 +79,11 @@ function trimVideos(videoPath, trims, mode, callback) {
 	const trimsLocations = [];
 	const videoExtension = videoPath.split('.').pop().toLowerCase();
 	// A list to concat the videos in
-	const videosListFileName = Path.join(__dirname, `filelist-${Date.now()}`);
+	const videosListFileName = path.join(__dirname, `filelist-${Date.now()}`);
 
 	trims.forEach((element, index) => {
 		trimFuncArray.push((callback) => {
-			const videoLocation = Path.join(__dirname, `trimmed-video-${Date.now()}.${videoExtension}`);
+			const videoLocation = path.join(__dirname, `trimmed-video-${Date.now()}.${videoExtension}`);
 			trimsLocations.push(videoLocation);
 			var cmd = 'ffmpeg -i ' + videoPath + ' -ss ' + element.from + ' -to ' + element.to + ' -async 1 -strict 2 ' + videoLocation;
 			console.log("Command: " + cmd);
@@ -106,12 +108,12 @@ function trimVideos(videoPath, trims, mode, callback) {
 }
 
 function concatVideos(videoPaths, callback) {
-	const videosListFileName = Path.join(__dirname, `filelist-${Date.now()}`);
+	const videosListFileName = path.join(__dirname, `filelist-${Date.now()}`);
 	videoPaths.forEach((videoLocation) => {
 		fs.appendFileSync(videosListFileName, "file '" + videoLocation + "'\n");
 	})
 
-	const concatedLocation = Path.join(__dirname, `concated-video-${Date.now()}.${videoPaths[0].split('.').pop()}`);
+	const concatedLocation = path.join(__dirname, `concated-video-${Date.now()}.${videoPaths[0].split('.').pop()}`);
 	var cmd = `ffmpeg -f concat -safe 0 -i ${videosListFileName} -c copy ${concatedLocation}`;
 	exec(cmd, (err, stdout, stderr) => {
 		fs.unlink(videosListFileName, () => { });
@@ -128,7 +130,7 @@ function rotateVideos(videosPaths, RotateValue, callback) {
 	videosPaths.forEach((videoPath) => {
 		rotateFuncArray.push((cb) => {
 			const videoExtension = videoPath.split('.').pop().toLowerCase();
-			const rotatedLocation = Path.join(__dirname, `rotated-video-${Date.now()}.${videoExtension}`);
+			const rotatedLocation = path.join(__dirname, `rotated-video-${Date.now()}.${videoExtension}`);
 			rotatesLocations.push(rotatedLocation);
 			if (RotateValue == 0 || RotateValue == 1 || RotateValue == 2 || RotateValue == 3) {
 				// I'm justing changing RotateValue here and assigning to 1 as for now the 
@@ -157,7 +159,7 @@ function cropVideos(videosPaths, out_width, out_height, x_value, y_value, callba
 	videosPaths.forEach((videoPath) => {
 		cropsFuncArray.push((cb) => {
 			const videoExtension = videoPath.split('.').pop().toLowerCase();
-			const croppedLocation = Path.join(__dirname, `cropped-video-${Date.now()}.${videoExtension}`);
+			const croppedLocation = path.join(__dirname, `cropped-video-${Date.now()}.${videoExtension}`);
 			cropsLocations.push(croppedLocation);
 
 			var cmd = `ffmpeg -i ${videoPath} -filter:v "crop=${out_width / 100}*in_w:${out_height / 100}*in_h:${x_value / 100}*in_w:${y_value / 100}*in_h" -c:a copy ${croppedLocation}`
@@ -184,7 +186,7 @@ function removeAudioFromVideos(videosPaths, callback) {
 	videosPaths.forEach((videoPath) => {
 		removeAudioFunc.push((cb) => {
 			const videoExtension = videoPath.split('.').pop().toLowerCase();
-			const clearedLocation = Path.join(__dirname, `cleared-video-${Date.now()}.${videoExtension}`);
+			const clearedLocation = path.join(__dirname, `cleared-video-${Date.now()}.${videoExtension}`);
 			clearedLocations.push(clearedLocation);
 			const cmd = `ffmpeg -i ${videoPath} -an ${clearedLocation}`;
 			exec(cmd, (err) => {
