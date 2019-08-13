@@ -104,6 +104,7 @@ router.post('/video-cut-tool-back-end/send', function (req, res, next) {
 	const url = req.body.inputVideoUrl;
 	var mode = req.body.trimMode;
 	var trims = req.body.trims;
+	const trimVideo = req.body.trimVideo;
 	var user = req.body.user;
 	let videoExtension = url.split('.').pop().toLowerCase();
 	let videoName = `video_${Date.now()}_${parseInt(Math.random() * 10000)}`
@@ -146,7 +147,7 @@ router.post('/video-cut-tool-back-end/send', function (req, res, next) {
 		const processFuncArray = [];
 		// Initialize video path with the downloaded path
 
-		if (videoSettings === 'trim') {
+		if (trimVideo) {
 			processFuncArray.push((cb) => {
 				console.log('trimming')
 				utils.trimVideos(videoPath, trims, mode, (err, videosLocation) => {
