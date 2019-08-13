@@ -137,6 +137,7 @@ router.post('/video-cut-tool-back-end/send', function (req, res, next) {
 		console.log("Hey I'm trimmed")
 	}
 
+	console.log('downloading video')
 	utils.downloadVideo(url, (err, videoPath) => {
 		if (err || !videoPath || !fs.existsSync(videoPath)) {
 			console.log(err)
@@ -200,6 +201,7 @@ router.post('/video-cut-tool-back-end/send', function (req, res, next) {
 				})
 			})
 		}
+		console.log('starting processing')
 		async.waterfall(processFuncArray, (err, result) => {
 			console.log(err, result)
 			console.log('=================== result ==================');
