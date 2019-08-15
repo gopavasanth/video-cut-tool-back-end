@@ -10,7 +10,7 @@ var express = require("express"),
 const http = require('http');
 var mongoose = require('mongoose');
 let ejs = require('ejs');
-const PopupTools = require('popup-tools')
+const PopupTools = require('popup-tools');
 const utils = require('./utils');
 
 var config = require('../config');
@@ -132,11 +132,6 @@ router.post('/video-cut-tool-back-end/send', function (req, res, next) {
 	console.log("Video trim into multiple videos : " + trimIntoMultipleVideos);
 	console.log("Video trim in to single video : " + trimIntoSingleVideo);
 	console.log("New video Title : " + title)
-
-	if (mode == "single" || mode == "multiple") {
-		videoSettings = "trim";
-		console.log("Hey I'm trimmed")
-	}
 
 	console.log('downloading video')
 	utils.downloadVideo(url, (err, videoPath) => {
