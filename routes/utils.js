@@ -61,7 +61,7 @@ function deleteFiles(files) {
 
 function downloadVideo(url, callback) {
 	let videoExtension = url.split('.').pop().toLowerCase();
-	var videoDownloadPath = path.join(__dirname, '/videos/', `video_${Date.now()}_${parseInt(Math.random() * 10000)}` + '.' + videoExtension);
+	var videoDownloadPath = path.join(__dirname, `video_${Date.now()}_${parseInt(Math.random() * 10000)}` + '.' + videoExtension);
 	var cmd = ("ffmpeg -y -i " + url + " -vcodec copy -acodec copy " + videoDownloadPath);
 	exec(cmd, (err) => {
 		if (err) return callback(err);
