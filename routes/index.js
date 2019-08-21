@@ -124,6 +124,7 @@ router.post('/video-cut-tool-back-end/send', function (req, res, next) {
 	// the video should rotate only 90 degreee clock wise
 	let RotateValue = 1;
 
+	//This is to log the outting video 
 	console.log("Your Video Mode is : " + mode);
 	console.log("Your video upload to commons is : " + upload);
 	console.log("You Video Audio Disablity is : " + disableAudio);
@@ -134,14 +135,18 @@ router.post('/video-cut-tool-back-end/send', function (req, res, next) {
 	console.log("New video Title : " + title)
 
 	console.log('downloading video')
+
+	// This fetches the video into the server.
+	// Params: videoURL -> videoPath
 	utils.downloadVideo(url, (err, videoPath) => {
 		if (err || !videoPath || !fs.existsSync(videoPath)) {
 			console.log(err)
 			return res.status(400).send('Error downloading video');
 		}
 		const processFuncArray = [];
-		// Initialize video path with the downloaded path
 
+		// if the trimVideo is true, this function trims video based on trims array
+		// Params: videoPath, trims[]
 		if (trimVideo) {
 			processFuncArray.push((cb) => {
 				console.log('trimming')
@@ -159,15 +164,9 @@ router.post('/video-cut-tool-back-end/send', function (req, res, next) {
 				}, 100);
 			})
 		}
-		if (rotateVideo) {
-			processFuncArray.push((videoPaths, cb) => {
-				utils.rotateVideos(videoPaths, RotateValue, (err, rotatedVideos) => {
-					utils.deleteFiles(videoPaths);
-					if (err) return cb(err);
-					return cb(null, rotatedVideos);
-				})
-			})
-		}
+
+		// if the CropVideo is true, 
+		// Params: videoPaths, out_width, out_height, x_value, y_value
 		if (cropVideo) {
 			processFuncArray.push((videoPaths, cb) => {
 				console.log('cropping')
@@ -178,6 +177,21 @@ router.post('/video-cut-tool-back-end/send', function (req, res, next) {
 				})
 			})
 		}
+
+		// if the rotateVideo is true, this rotates the video to 90 degree clock-wise
+		// Params: videoPaths, RotateValue
+		if (rotateVideo) {
+			processFuncArray.push((videoPaths, cb) => {
+				utils.rotateVideos(videoPaths, RotateValue, (err, rotatedVideos) => {
+					utils.deleteFiles(videoPaths);
+					if (err) return cb(err);
+					return cb(null, rotatedVideos);
+				})
+			})
+		}
+
+		// Based on the video mode, If single this concatinates the trimmed videos into one.
+		// Params: videoPaths
 		if (mode === "single" && trims.length > 1) {
 			processFuncArray.push((videoPaths, cb) => {
 				utils.concatVideos(videoPaths, (err, concatedPath) => {
@@ -187,6 +201,9 @@ router.post('/video-cut-tool-back-end/send', function (req, res, next) {
 				})
 			})
 		}
+
+		// This disables the audio in the video.
+		// Params: videoPaths
 		if (disableAudio) {
 			processFuncArray.push((videoPaths, cb) => {
 				console.log('remove audio')
@@ -198,6 +215,8 @@ router.post('/video-cut-tool-back-end/send', function (req, res, next) {
 			})
 		}
 		console.log('starting processing')
+
+		// With Async Waterfall method all the required operations will start
 		async.waterfall(processFuncArray, (err, result) => {
 			console.log(err, result)
 			console.log('=================== result ==================');
@@ -208,14 +227,15 @@ router.post('/video-cut-tool-back-end/send', function (req, res, next) {
 			// if (!upload || result.length > 1) {
 			// 	return res.json({ videos: result });
 			// }
+			// This modules supports to upload the result of the operations to the Commons
 			// wikiUpload.uploadFileToMediawiki(
 			// 	user.mediawikiToken,
 			// 	user.mediawikiSecret,
-			// 	// fs.createWriteStream('rotate/' + RotatedvideoName + '.' + videoExtension),
+			// 	fs.createWriteStream(result[0]),
 			// 	fs.createReadStream(result[0]),
 			// 	{
 			// 		filename: title,
-			// 		// text: 'New Text'
+			// 		text: 'New Text'
 			// 	},
 			// 	(err, response) => {
 			// 		if (err) {
@@ -243,7 +263,6 @@ router.get("/", function (req, res) {
 	res.redirect(req.baseUrl + '/video-cut-tool-back-end/');
 });
 
-
 router.get('/auth/mediawiki', passport.authenticate("mediawiki"), () => {
 
 });
@@ -252,7 +271,7 @@ router.get('/video-cut-tool-back-end/auth/mediawiki/callback', passport.authenti
 	failureRedirect: '/login',
 }), (req, res) => {
 	const user = JSON.parse(JSON.stringify(req.user));
-
+	console.log(user);
 	res.end(PopupTools.popupResponse({ user }));
 
 })
@@ -261,7 +280,7 @@ router.get('/auth/mediawiki/callback', passport.authenticate('mediawiki', {
 	failureRedirect: '/login',
 }), (req, res) => {
 	const user = JSON.parse(JSON.stringify(req.user));
-
+	console.log(user);
 	res.end(PopupTools.popupResponse({ user }));
 
 })

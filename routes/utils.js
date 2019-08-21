@@ -77,7 +77,7 @@ function trimVideos(videoPath, trims, mode, callback) {
 	const trimFuncArray = [];
 	const trimsLocations = [];
 	const videoExtension = videoPath.split('.').pop().toLowerCase();
-	// A list to concat the videos in
+	// A list to concat the videos
 	const videosListFileName = path.join(__dirname, `filelist-${Date.now()}`);
 
 	trims.forEach((element, index) => {
