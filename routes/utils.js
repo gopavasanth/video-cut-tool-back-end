@@ -131,12 +131,7 @@ function rotateVideos(videosPaths, RotateValue, callback) {
 			const videoExtension = videoPath.split('.').pop().toLowerCase();
 			const rotatedLocation = path.join(__dirname, `rotated-video-${Date.now()}.${videoExtension}`);
 			rotatesLocations.push(rotatedLocation);
-			if (RotateValue == 0 || RotateValue == 1 || RotateValue == 2 || RotateValue == 3) {
-				// I'm justing changing RotateValue here and assigning to 1 as for now the 
-				// the video should rotate only 90 degreee clock wise
-				RotateValue == '1';
-				var cmd = 'ffmpeg -i ' + videoPath + ' -vf "transpose=' + RotateValue + '" ' + rotatedLocation;
-			}
+			var cmd = 'ffmpeg -i ' + videoPath + ' -vf "transpose=' + RotateValue + '" ' + rotatedLocation;
 			console.log("Command" + cmd);
 			exec(cmd, (err) => {
 				if (err) return cb(err);
@@ -199,7 +194,6 @@ function removeAudioFromVideos(videosPaths, callback) {
 		return callback(null, clearedLocations);
 	})
 }
-
 
 module.exports = {
     move,

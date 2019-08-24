@@ -7,6 +7,7 @@ var express = require("express"),
 	app = express(),
 	router = express.Router(),
 	path = require('path');
+	
 const http = require('http');
 var mongoose = require('mongoose');
 let ejs = require('ejs');
@@ -112,6 +113,7 @@ router.post('/video-cut-tool-back-end/send', function (req, res, next) {
 	var videoSettings;
 	var upload = true;
 	var title = req.body.title;
+	var RotateValue = res.body.RotateValue;
 
 	// Video Settings
 	var rotateVideo = req.body.rotateVideo;
@@ -227,7 +229,7 @@ router.post('/video-cut-tool-back-end/send', function (req, res, next) {
 			// if (!upload || result.length > 1) {
 			// 	return res.json({ videos: result });
 			// }
-			// This modules supports to upload the result of the operations to the Commons
+			// // This modules supports to upload the result of the operations to the Commons
 			// wikiUpload.uploadFileToMediawiki(
 			// 	user.mediawikiToken,
 			// 	user.mediawikiSecret,
