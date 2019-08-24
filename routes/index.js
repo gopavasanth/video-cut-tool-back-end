@@ -221,8 +221,29 @@ router.post('/video-cut-tool-back-end/send', function (req, res, next) {
 			console.log(err, result)
 			console.log('=================== result ==================');
 			utils.moveVideosToPublic(result, (err, newPaths) => {
+				console.log('moved to public', newPaths)
 				if (err) return res.status(400).send('something went wrong');
-				return res.json({ videos: newPaths.map((p) => p.split('public/').pop())});
+				if (!upload) {
+					return res.json({ videos: newPaths.map((p) => p.split('public/').pop()) });
+				}
+
+				// This modules supports to upload the result of the operations to the Commons
+				wikiUpload.uploadFileToMediawiki(
+					user.mediawikiToken,
+					user.mediawikiSecret,
+					fs.createReadStream(newPaths[0]),
+					{
+						filename: title,
+						text: title,
+					},
+					(err, response) => {
+						if (err) {
+							console.log(err);
+							return res.status(400).send('Something went wrong while uploading the video')
+						}
+						res.send(response);
+					}
+				)
 			})
 			// if (!upload || result.length > 1) {
 			// 	return res.json({ videos: result });
