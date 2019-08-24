@@ -131,7 +131,19 @@ function rotateVideos(videosPaths, RotateValue, callback) {
 			const videoExtension = videoPath.split('.').pop().toLowerCase();
 			const rotatedLocation = path.join(__dirname, `rotated-video-${Date.now()}.${videoExtension}`);
 			rotatesLocations.push(rotatedLocation);
-			var cmd = 'ffmpeg -i ' + videoPath + ' -vf "transpose=' + RotateValue + '" ' + rotatedLocation;
+			if (RotateValue == 0){
+				// 90 degree clock wise rotate
+				var cmd = 'ffmpeg -i ' + videoPath + ' -vf "transpose=1"' + rotatedLocation;	
+			} else if (RotateValue==1) {
+				// 180 degree rotate
+				var cmd = 'ffmpeg -i ' + videoPath + ' -vf "transpose=2,transpose=2"'  + rotatedLocation;
+			} else if (RotateValue ==2){
+				// 270 degree rotate
+				var cmd = 'ffmpeg -i ' + videoPath + ' -vf "transpose=' + RotateValue + '" ' + rotatedLocation;
+			} else {
+				// 360 degree (Same as intial video)
+				var cmd = 'ffmpeg -i ' + videoPath + ' -vf "transpose=4" ' + rotatedLocation;
+			}
 			console.log("Command" + cmd);
 			exec(cmd, (err) => {
 				if (err) return cb(err);

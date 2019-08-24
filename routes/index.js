@@ -113,7 +113,7 @@ router.post('/video-cut-tool-back-end/send', function (req, res, next) {
 	var videoSettings;
 	var upload = true;
 	var title = req.body.title;
-	var RotateValue = res.body.RotateValue;
+	var RotateValue = req.body.RotateValue;
 
 	// Video Settings
 	var rotateVideo = req.body.rotateVideo;
@@ -121,10 +121,6 @@ router.post('/video-cut-tool-back-end/send', function (req, res, next) {
 	var trimIntoSingleVideo = req.body.trimIntoSingleVideo;
 	var cropVideo = req.body.cropVideo;
 	var upload = req.body.upload;
-
-	// I'm justing changing RotateValue here and assigning to 1 as for now the 
-	// the video should rotate only 90 degreee clock wise
-	let RotateValue = 1;
 
 	//This is to log the outting video 
 	console.log("Your Video Mode is : " + mode);
@@ -135,7 +131,7 @@ router.post('/video-cut-tool-back-end/send', function (req, res, next) {
 	console.log("Video trim into multiple videos : " + trimIntoMultipleVideos);
 	console.log("Video trim in to single video : " + trimIntoSingleVideo);
 	console.log("New video Title : " + title)
-
+	console.log("Rotate Video : " + RotateValue);
 	console.log('downloading video')
 
 	// This fetches the video into the server.
@@ -223,30 +219,30 @@ router.post('/video-cut-tool-back-end/send', function (req, res, next) {
 			console.log(err, result)
 			console.log('=================== result ==================');
 			utils.moveVideosToPublic(result, (err, newPaths) => {
+				console.log('moved to public', newPaths)
 				if (err) return res.status(400).send('something went wrong');
-				return res.json({ videos: newPaths.map((p) => p.split('public/').pop())});
+				if (!upload) {
+					return res.json({ videos: newPaths.map((p) => p.split('public/').pop()) });
+				}
+
+				// This modules supports to upload the result of the operations to the Commons
+				wikiUpload.uploadFileToMediawiki(
+					user.mediawikiToken,
+					user.mediawikiSecret,
+					fs.createReadStream(newPaths[0]),
+					{
+						filename: title,
+						text: title,
+					},
+					(err, response) => {
+						if (err) {
+							console.log(err);
+							return res.status(400).send('Something went wrong while uploading the video')
+						}
+						res.send(response);
+					}
+				)
 			})
-			// if (!upload || result.length > 1) {
-			// 	return res.json({ videos: result });
-			// }
-			// // This modules supports to upload the result of the operations to the Commons
-			// wikiUpload.uploadFileToMediawiki(
-			// 	user.mediawikiToken,
-			// 	user.mediawikiSecret,
-			// 	fs.createWriteStream(result[0]),
-			// 	fs.createReadStream(result[0]),
-			// 	{
-			// 		filename: title,
-			// 		text: 'New Text'
-			// 	},
-			// 	(err, response) => {
-			// 		if (err) {
-			// 			console.log(err);
-			// 			return res.status(400).send('Something went wrong while uploading the video')
-			// 		}
-			// 		res.send(response);
-			// 	}
-			// )
 		})
 	})
 });
