@@ -10,7 +10,11 @@ const oauth = OAuth({
   consumer: {
     key: config.consumer_key,
     secret: config.consumer_secret
-  }
+  },
+  signature_method: 'HMAC-SHA1',
+  hash_function (baseString, key) {
+    return crypto.createHmac('sha1', key).update(baseString).digest('base64')
+  },
 })
 
 const BASE_URL = 'https://commons.wikimedia.org/w/api.php';
