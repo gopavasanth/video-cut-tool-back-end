@@ -258,9 +258,9 @@ router.get('/video-cut-tool-back-end/login', passport.authenticate("mediawiki"),
 });
 
 
-router.get("/video-cut-tool-back-end/login", function (req, res) {
-	res.redirect(req.baseUrl + "/auth/mediawiki");
-});
+// router.get("/video-cut-tool-back-end/login", function (req, res) {
+// 	res.redirect(req.baseUrl + "/auth/mediawiki");
+// });
 
 router.get("/", function (req, res) {
 	res.redirect(req.baseUrl + '/video-cut-tool-back-end/');
