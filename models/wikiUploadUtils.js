@@ -29,6 +29,7 @@ function uploadFileToMediawiki(key, secret, file, options, callback) {
     key,
     secret,
   }
+  console.log('user token', token);
   return new Promise((resolve, reject) => {
     // fetch an update csrf token
 
