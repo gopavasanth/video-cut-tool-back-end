@@ -228,7 +228,7 @@ function sendCallback (req, res, next) {
 				// This modules supports to upload the result of the operations to the Commons
 				wikiUpload.uploadFileToMediawiki(
 					user.mediawikiToken,
-					user.mediawikiSecret,
+					user.mediawikiTokenSecret,
 					fs.createReadStream(newPaths[0]),
 					{
 						filename: title,
