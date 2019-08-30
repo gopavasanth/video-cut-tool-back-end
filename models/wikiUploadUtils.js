@@ -46,6 +46,7 @@ function uploadFileToMediawiki(key, secret, file, options, callback) {
         return callback(err)
       }
       const parsedBody = JSON.parse(body)
+      console.log('parsed content', parsedBody)
       const csrfToken = parsedBody.query.tokens.csrftoken
 
       const requestData = {
