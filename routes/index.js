@@ -95,7 +95,7 @@ router.get('/video-cut-tool-back-end', function (req, res, next) {
 	});
 });
 
-router.post('/video-cut-tool-back-end/send', function (req, res, next) {
+function sendCallback (req, res, next) {
 	console.log('Hit Send')
 	const disableAudio = req.body.disableAudio;
 	var out_width = req.body.out_width;
@@ -245,7 +245,11 @@ router.post('/video-cut-tool-back-end/send', function (req, res, next) {
 			})
 		})
 	})
-});
+}
+
+router.post('/video-cut-tool-back-end/send', sendCallback);
+router.post('/send', sendCallback);
+
 
 router.get('/insert', function (req, res, next) {
 	res.render('index', {
