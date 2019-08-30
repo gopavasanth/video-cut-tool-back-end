@@ -7,18 +7,18 @@ const bodyParser = require('body-parser');
 const cors = require('cors'); // addition we make
 const fileUpload = require('express-fileupload'); //addition we make
 config = require( "./config" );
-const UserModel = require('./models/User'); 
-const User = require('./models/User')
+// const UserModel = require('./models/User'); 
+// const User = require('./models/User')
 
-const mongoose = require('mongoose');
+// const mongoose = require('mongoose');
 
 // const uri = "mongodb+srv://Gopa:" + config.password + "@cluster0-rmrcx.mongodb.net/test?retryWrites=true&w=majority";
 const uri = "mongodb://localhost/video-cut-tool";
 
-mongoose.connect(uri, { useNewUrlParser: true }, (err) => {
-  console.log(err);
-  // console.log(connected);
-});
+// mongoose.connect(uri, { useNewUrlParser: true }, (err) => {
+//   console.log(err);
+//   // console.log(connected);
+// });
 
 const index = require('./routes/index');
 const users = require('./routes/users');
@@ -63,39 +63,40 @@ passport.use(new MediaWikiStrategy({
   (token, tokenSecret, profile, done) => {
     // asynchronous verification, for effect...
     process.nextTick(() => {
+      const newUserData = { mediawikiId: profile.id, username: profile.displayName, mediawikiToken: token, mediawikiTokenSecret: tokenSecret };
+      return done(null, newUserData);
+      // UserModel.findOne({ mediawikiId: profile.id }, (err, userInfo) => {
+      //   if (err) return done(err)
+      //   if (userInfo) {
+      //     // User already exists, update access token and secret
+      //     const userData = {
+      //       mediawikiId: profile.id,
+      //       username: profile.displayName,
+      //       mediawikiToken: token,
+      //       mediawikiTokenSecret: tokenSecret,
+      //     };
 
-      UserModel.findOne({ mediawikiId: profile.id }, (err, userInfo) => {
-        if (err) return done(err)
-        if (userInfo) {
-          // User already exists, update access token and secret
-          const userData = {
-            mediawikiId: profile.id,
-            username: profile.displayName,
-            mediawikiToken: token,
-            mediawikiTokenSecret: tokenSecret,
-          };
+      //     UserModel.findByIdAndUpdate(userInfo._id, { $set: { mediawikiToken: token, mediawikiTokenSecret: tokenSecret } }, { new: true }, (err, userInfo) => {
+      //       if (err) return done(err);
+      //       return done(null, {
+      //         _id: userInfo._id,
+      //         mediawikiId: profile.id,
+      //         username: profile.displayName,
+      //         mediawikiToken: token,
+      //         mediawikiTokenSecret: tokenSecret,
+      //       })
+      //     })
+      //   } else {
+      //     // User dont exst, create one
+      //     const newUserData = { mediawikiId: profile.id, username: profile.displayName, mediawikiToken: token, mediawikiTokenSecret: tokenSecret };
+      //     const newUser = new UserModel(newUserData)
 
-          UserModel.findByIdAndUpdate(userInfo._id, { $set: { mediawikiToken: token, mediawikiTokenSecret: tokenSecret } }, { new: true }, (err, userInfo) => {
-            if (err) return done(err);
-            return done(null, {
-              _id: userInfo._id,
-              mediawikiId: profile.id,
-              username: profile.displayName,
-              mediawikiToken: token,
-              mediawikiTokenSecret: tokenSecret,
-            })
-          })
-        } else {
-          // User dont exst, create one
-          const newUserData = { mediawikiId: profile.id, username: profile.displayName, mediawikiToken: token, mediawikiTokenSecret: tokenSecret };
-          const newUser = new UserModel(newUserData)
-
-          newUser.save((err) => {
-            if (err) return done(err)
-            return done(null, newUser)
-          })
-        }
-      })
+      //     newUser.save((err) => {
+      //       if (err) return done(err)
+      //       return done(null, newUser)
+      //     })
+      //   }
+      // })
     })
   },
 ))
