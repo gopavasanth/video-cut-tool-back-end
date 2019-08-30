@@ -246,7 +246,7 @@ function sendCallback (req, res, next) {
 		})
 	})
 }
-
+router.post('/video-cut-tool-back-end/video-cut-tool-back-end/send', sendCallback);
 router.post('/video-cut-tool-back-end/send', sendCallback);
 router.post('/send', sendCallback);
 
