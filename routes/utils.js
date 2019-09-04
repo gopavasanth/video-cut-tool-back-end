@@ -125,7 +125,7 @@ function rotateVideos(videosPaths, RotateValue, callback) {
 	console.log("I'm Rotatted ");
 	const rotatesLocations = [];
 	const rotateFuncArray = [];
-
+	
 	videosPaths.forEach((videoPath) => {
 		rotateFuncArray.push((cb) => {
 			const videoExtension = videoPath.split('.').pop().toLowerCase();
@@ -133,10 +133,10 @@ function rotateVideos(videosPaths, RotateValue, callback) {
 			rotatesLocations.push(rotatedLocation);
 			if (RotateValue == 0){
 				// 90 degree clock wise rotate
-				var cmd = 'ffmpeg -i ' + videoPath + ' -vf "transpose=1"' + rotatedLocation;	
+				var cmd = 'ffmpeg -i ' + videoPath + ' -vf "transpose=1" ' + rotatedLocation;	
 			} else if (RotateValue==1) {
 				// 180 degree rotate
-				var cmd = 'ffmpeg -i ' + videoPath + ' -vf "transpose=2,transpose=2"'  + rotatedLocation;
+				var cmd = 'ffmpeg -i ' + videoPath + ' -vf "transpose=2,transpose=2" '  + rotatedLocation;
 			} else if (RotateValue ==2){
 				// 270 degree rotate
 				var cmd = 'ffmpeg -i ' + videoPath + ' -vf "transpose=' + RotateValue + '" ' + rotatedLocation;
