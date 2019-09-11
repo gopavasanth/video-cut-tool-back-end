@@ -67,7 +67,7 @@ function uploadFileToMediawiki(key, secret, file, options, callback) {
         headers: oauth.toHeader(oauth.authorize(requestData, token)),
       }, (err, response, body) => {
         const parsedBody = JSON.parse(body)
-
+        console.log('parsed body', parsedBody);
         if (parsedBody.error) {
           reject(parsedBody.error)
           return callback(parsedBody.error)
