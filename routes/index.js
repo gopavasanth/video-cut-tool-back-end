@@ -257,6 +257,11 @@ router.get('/insert', function (req, res, next) {
 	});
 });
 
+
+router.get('/video-cut-tool-back-end/video-cut-tool-back-end/login', passport.authenticate("mediawiki"), () => {
+
+});
+
 router.get('/video-cut-tool-back-end/login', passport.authenticate("mediawiki"), () => {
 
 });
@@ -273,6 +278,15 @@ router.get("/", function (req, res) {
 // router.get('/auth/mediawiki', passport.authenticate("mediawiki"), () => {
 
 // });
+
+router.get('/video-cut-tool-back-end/video-cut-tool-back-end/auth/mediawiki/callback', passport.authenticate('mediawiki', {
+	failureRedirect: '/login',
+}), (req, res) => {
+	const user = JSON.parse(JSON.stringify(req.user));
+	console.log(user);
+	res.end(PopupTools.popupResponse({ user }));
+
+})
 
 router.get('/video-cut-tool-back-end/auth/mediawiki/callback', passport.authenticate('mediawiki', {
 	failureRedirect: '/login',
