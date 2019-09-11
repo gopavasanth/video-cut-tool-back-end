@@ -222,7 +222,7 @@ function sendCallback (req, res, next) {
 				console.log('moved to public', newPaths)
 				if (err) return res.status(400).send('something went wrong');
 				if (!upload) {
-					return res.json({ videos: newPaths.map((p) => `/public/${p.split('public/').pop()}`) });
+					return res.json({ videos: newPaths.map((p) => `public/${p.split('public/').pop()}`) });
 				}
 
 				// This modules supports to upload the result of the operations to the Commons
