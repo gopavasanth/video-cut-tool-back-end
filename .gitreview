@@ -1,0 +1,7 @@
+[gerrit]
+host=gerrit.wikimedia.org
+port=29418
+project=labs/tools/video-cut-tool-back-end.git
+defaultbranch=master
+defaultrebase=0
+track=1
