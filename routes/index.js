@@ -250,13 +250,16 @@ router.post('/video-cut-tool-back-end/video-cut-tool-back-end/send', sendCallbac
 router.post('/video-cut-tool-back-end/send', sendCallback);
 router.post('/send', sendCallback);
 
+router.get('/download/public/:videopath', function(req, res, next){
+	const file = 'public/'+req.params.videopath;
+	res.download(file); // Set disposition and send it.
+});
 
 router.get('/insert', function (req, res, next) {
 	res.render('index', {
 		message: "Trimming success"
 	});
 });
-
 
 router.get('/video-cut-tool-back-end/video-cut-tool-back-end/login', passport.authenticate("mediawiki"), () => {
 
