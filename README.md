@@ -19,7 +19,7 @@ You need to request Mediawiki OAuth keys from https://meta.wikimedia.org/wiki/Sp
 	
 After submitting form, you will be given config.consumer_key and config.consumer_secret substitue these keys in your `config.js` file.
 
-### Installation
+## Installation
 
 In the project directory, you can run:
 
