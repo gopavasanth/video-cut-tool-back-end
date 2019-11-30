@@ -4,6 +4,21 @@ You can learn more in the https://commons.wikimedia.org/wiki/Commons:VideoCutToo
 
 In the project directory, you can run:
 
+## Request OAuth keys
+
+You need to request Mediawiki OAuth keys from https://meta.wikimedia.org/wiki/Special:OAuthConsumerRegistration/propose.
+
+1. Dont forget to turn on these following items under Applicable grants:
+
+	1. Edit existing pages.
+	2. Create, edit, and move pages.
+	3. Upload new files.
+	4. Upload, replace, and move files.
+
+2. Call back URL as 'https://localhost:4000/video-cut-tool-back-end/auth/mediawiki/callback'
+	
+After submitting form, you will be given config.consumer_key and config.consumer_secret substitue these keys in your `config.js` file.
+
 ### `npm install`
 
 Installs the required dependencies for this tool
