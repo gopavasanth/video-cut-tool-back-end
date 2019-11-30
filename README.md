@@ -25,7 +25,7 @@ In the project directory, you can run:
 
 `npm install`
 
-Installs the required dependencies for this tool
+Installs the required dependencies for VideoCutTool
 
 `npm start`
 
