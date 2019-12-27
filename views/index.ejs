@@ -1,11 +1,4 @@
 <!-- views/index.ejs -->
 <meta charset="utf-8">
 <h1>VideoCutTool OAuth </h1> 
-
-<% if(user) { %>
-  Greetings, <%= user.displayName %>! <a href="<%= url %>/logout">Click to logout</a>
-<% } else { %>
-  <a href="<%= url %>http://localhost:4000/video-cut-tool-back-end/login">Click here to login</a>
-<% } %>
-
 <p> VideoCutTool is to trim videos in Wikimedia Commons. Currently all videos in commons can not be edited online. They have to be downloaded and changes has to be made and re-uploaded. As this process tend to take a good amount of time, the  VideoCutTool makes authorised users work hopefully up-to 10x faster, This tool will be be hosted on Wikimedia Toolforge, This is a hosting environment that provide services to the Wikimedia movement.<p>
