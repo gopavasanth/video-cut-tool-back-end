@@ -35,6 +35,8 @@ Open [http://localhost:4000](http://localhost:4000) to view it in the browser.
 The page will reload if you make edits.<br>
 You will also see any lint errors in the console.
 
+### Production
+
 If running on production, you need to ensure that `monitor.sh` and `bin/monitor.sh` have +x permissions, otherwise they will cause an error like "not an executable file".
 
 You can do this by running the commands `chmod +x monitor.sh` and `chmod +x bin/monitor.sh`.
