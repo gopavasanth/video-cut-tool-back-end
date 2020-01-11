@@ -16,6 +16,7 @@ do
     if ! curl -s $URL >/dev/null
     then
         echo "Host is DOWN. Expecting crash, restarting webservice."
+        webservice --backend=kubernetes nodejs restart
     else
         echo "Host is UP."
     fi
