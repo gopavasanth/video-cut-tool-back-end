@@ -20,3 +20,4 @@ case "$1" in
     *)
         echo "./monitor.sh <start/stop/restart>"
         ;;
+esac
