@@ -5,7 +5,8 @@ set -e
 case "$1" in
     start)
         echo "Starting monitoring.."
-        jstart `dirname "$0"`/bin/monitor
+        chmod +x `dir "$0"`/bin/monitor.sh
+        jstart `dirname "$0"`/bin/monitor.sh
         echo "Monitoring script started."
         ;;
     stop)
@@ -15,7 +16,7 @@ case "$1" in
     restart)
         echo "Restarting monitoring script.."
         jstop monitor
-        jstart `dirname "$0" /bin/monitor`
+        jstart `dirname "$0" /bin/monitor.sh`
         ;;
     *)
         echo "./monitor.sh <start/stop/restart>"
