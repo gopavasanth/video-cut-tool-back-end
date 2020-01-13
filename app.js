@@ -1,27 +1,13 @@
 const express = require('express');
 const path = require('path');
-const favicon = require('serve-favicon');
 const logger = require('morgan');
 const cookieParser = require('cookie-parser');
 const bodyParser = require('body-parser');
 const cors = require('cors'); // addition we make
 const fileUpload = require('express-fileupload'); //addition we make
 config = require( "./config" );
-// const UserModel = require('./models/User'); 
-// const User = require('./models/User')
-
-// const mongoose = require('mongoose');
-
-// const uri = "mongodb+srv://Gopa:" + config.password + "@cluster0-rmrcx.mongodb.net/test?retryWrites=true&w=majority";
-const uri = "mongodb://localhost/video-cut-tool";
-
-// mongoose.connect(uri, { useNewUrlParser: true }, (err) => {
-//   console.log(err);
-//   // console.log(connected);
-// });
 
 const index = require('./routes/index');
-const users = require('./routes/users');
 const app = express();
 
 var passport = require( "passport" ),
@@ -34,8 +20,6 @@ app.set('view engine', 'ejs');
 app.use(express.static(path.join(__dirname, 'public')));
 app.use('/public', express.static(path.join(__dirname, 'public')));
 app.use('/video-cut-tool-back-end/public', express.static(path.join(__dirname, 'public')));
-// uncomment after placing your favicon in /public
-//app.use(favicon(path.join(__dirname, 'public', 'favicon.ico')));
 
 app.use(logger('dev'));
 app.use(bodyParser.json());
@@ -50,7 +34,7 @@ app.use( passport.initialize() );
 app.use( passport.session() );
 
 app.use(
-   session({
+  session({
     secret: "OAuth Session",
     saveUninitialized: true,
     resave: true
@@ -67,48 +51,16 @@ passport.use(new MediaWikiStrategy({
     process.nextTick(() => {
       const newUserData = { mediawikiId: profile.id, username: profile.displayName, mediawikiToken: token, mediawikiTokenSecret: tokenSecret };
       return done(null, newUserData);
-      // UserModel.findOne({ mediawikiId: profile.id }, (err, userInfo) => {
-      //   if (err) return done(err)
-      //   if (userInfo) {
-      //     // User already exists, update access token and secret
-      //     const userData = {
-      //       mediawikiId: profile.id,
-      //       username: profile.displayName,
-      //       mediawikiToken: token,
-      //       mediawikiTokenSecret: tokenSecret,
-      //     };
-
-      //     UserModel.findByIdAndUpdate(userInfo._id, { $set: { mediawikiToken: token, mediawikiTokenSecret: tokenSecret } }, { new: true }, (err, userInfo) => {
-      //       if (err) return done(err);
-      //       return done(null, {
-      //         _id: userInfo._id,
-      //         mediawikiId: profile.id,
-      //         username: profile.displayName,
-      //         mediawikiToken: token,
-      //         mediawikiTokenSecret: tokenSecret,
-      //       })
-      //     })
-      //   } else {
-      //     // User dont exst, create one
-      //     const newUserData = { mediawikiId: profile.id, username: profile.displayName, mediawikiToken: token, mediawikiTokenSecret: tokenSecret };
-      //     const newUser = new UserModel(newUserData)
-
-      //     newUser.save((err) => {
-      //       if (err) return done(err)
-      //       return done(null, newUser)
-      //     })
-      //   }
-      // })
     })
   },
 ))
 
 passport.serializeUser( function ( user, done ) {
-    done( null, user );
+  done( null, user );
 });
 
 passport.deserializeUser( function ( obj, done ) {
-    done( null, obj );
+  done( null, obj );
 });
 
 app.use('/routes', express.static(__dirname + '/routes'));
@@ -117,21 +69,16 @@ app.use('/', index);
 app.use('/login', (req, res) => {
   console.log("sample requst");
   res.send(res.redirect( req.baseUrl + "/auth/mediawiki/callback" ))
-}
-); // login
+}); // login
 
 app.get( "/logout" , function ( req, res ) {
 	delete req.session.user;
 	res.redirect( req.baseUrl + "/" );
 } );
 
-app.get('/video-cut-tool-back-end', function(req, res, next) {
-  res.render('index', {
-   title: 'VideoCutTool',
-   user: req && req.session && req.session.user,
-   url: req.baseUrl
-  });
- });
+app.get('/video-cut-tool-back-end', function(req, res) {
+  res.render('index');
+});
 
 // catch 404 and forward to error handler
 app.use(function(req, res, next) {
@@ -141,7 +88,7 @@ app.use(function(req, res, next) {
 });
 
 // error handler
-app.use(function(err, req, res, next) {
+app.use(function(err, req, res) {
   // set locals, only providing error in development
   res.locals.message = err.message;
   res.locals.error = req.app.get('env') === 'development' ? err : {};

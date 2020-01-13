@@ -1,42 +1,19 @@
 var express = require("express"),
 	session = require("express-session"),
 	passport = require("passport"),
-	MediaWikiStrategy = require("passport-mediawiki-oauth").OAuthStrategy,
-	series = require("async-series"),
 	async = require('async'),
 	app = express(),
-	router = express.Router(),
-	path = require('path');
-	
-const http = require('http');
-var mongoose = require('mongoose');
-let ejs = require('ejs');
+	router = express.Router();
+
 const PopupTools = require('popup-tools');
 const utils = require('./utils');
 
-var config = require('../config');
-const OAuth = require('oauth-1.0a');
 const wikiUpload = require('../models/wikiUploadUtils');
-const User = require('../models/User');
-const baseUrl = 'https://commons.wikimedia.org/w/api.php';
 
 app.set("views", __dirname + "/public/views");
 app.set("view engine", "ejs");
 
 const fs = require('fs');
-const Path = require('path');
-const Listr = require('listr');
-const Axios = require('axios');
-const shell = require('shelljs');
-const { exec } = require('child_process');
-const BASE_URL = 'https://commons.wikimedia.org/w/api.php';
-
-const oauth = OAuth({
-	consumer: {
-		key: config.consumer_key,
-		secret: config.consumer_secret,
-	},
-})
 
 app.use('/routes', express.static(__dirname + '/routes'));
 
@@ -48,37 +25,6 @@ app.use(session({
 	resave: true
 }));
 
-// mongoose.connect('localhost:4000/video-cut-tool-back-end', function (err) {
-
-//    if (err) throw err;
-
-//    console.log('Successfully connected');
-
-// });
-
-// passport.use(
-// 	new MediaWikiStrategy({
-// 		consumerKey: config.consumer_key,
-// 		consumerSecret: config.consumer_secret
-// 	},
-// 	function ( token, tokenSecret, profile, done ) {
-// 		profile.oauth = {
-// 			consumer_key: config.consumer_key,
-// 			consumer_secret: config.consumer_secret,
-// 			token: token,
-// 			token_secret: tokenSecret
-// 		};
-// 		const userProfile = {
-// 			...profile,
-// 			oauth: {
-// 				token: token,
-// 				token_secret: tokenSecret
-// 			}
-// 		}
-// 		return done( null, userProfile );
-// 	}
-// 	) );
-
 passport.serializeUser(function (user, done) {
 	done(null, user);
 });
@@ -87,15 +33,11 @@ passport.deserializeUser(function (obj, done) {
 	done(null, obj);
 });
 /* GET home page. */
-router.get('/video-cut-tool-back-end', function (req, res, next) {
-	res.render('index', {
-		title: 'VideoCutTool',
-		user: req && req.session && req.session.user,
-		url: req.baseUrl
-	});
+router.get('/video-cut-tool-back-end', function (req, res) {
+	res.render('index');
 });
 
-function sendCallback (req, res, next) {
+function sendCallback (req, res) {
 	console.log('Hit Send')
 	const disableAudio = req.body.disableAudio;
 	var out_width = req.body.out_width;
@@ -107,10 +49,6 @@ function sendCallback (req, res, next) {
 	var trims = req.body.trims;
 	const trimVideo = req.body.trimVideo;
 	var user = req.body.user;
-	let videoExtension = url.split('.').pop().toLowerCase();
-	let videoName = `video_${Date.now()}_${parseInt(Math.random() * 10000)}`
-	var videoPath = Path.join(__dirname, '/videos/', videoName + '.' + videoExtension);
-	var videoSettings;
 	var upload = true;
 	var title = req.body.title;
 	var RotateValue = req.body.RotateValue;
@@ -250,37 +188,20 @@ router.post('/video-cut-tool-back-end/video-cut-tool-back-end/send', sendCallbac
 router.post('/video-cut-tool-back-end/send', sendCallback);
 router.post('/send', sendCallback);
 
-router.get('/download/public/:videopath', function(req, res, next){
+router.get('/download/public/:videopath', function(req, res){
 	const file = 'public/'+req.params.videopath;
 	res.download(file); // Set disposition and send it.
 });
 
-router.get('/insert', function (req, res, next) {
-	res.render('index', {
-		message: "Trimming success"
-	});
+router.get('/insert', function (req, res) {
+	res.render('index');
 });
 
-router.get('/video-cut-tool-back-end/video-cut-tool-back-end/login', passport.authenticate("mediawiki"), () => {
-
-});
-
-router.get('/video-cut-tool-back-end/login', passport.authenticate("mediawiki"), () => {
-
-});
-
-
-// router.get("/video-cut-tool-back-end/login", function (req, res) {
-// 	res.redirect(req.baseUrl + "/auth/mediawiki");
-// });
+router.get(['/video-cut-tool-back-end/video-cut-tool-back-end/login', '/video-cut-tool-back-end/login'], passport.authenticate('mediawiki'), () => {});
 
 router.get("/", function (req, res) {
 	res.redirect(req.baseUrl + '/video-cut-tool-back-end/');
 });
-
-// router.get('/auth/mediawiki', passport.authenticate("mediawiki"), () => {
-
-// });
 
 router.get('/video-cut-tool-back-end/video-cut-tool-back-end/auth/mediawiki/callback', passport.authenticate('mediawiki', {
 	failureRedirect: '/login',
@@ -288,7 +209,6 @@ router.get('/video-cut-tool-back-end/video-cut-tool-back-end/auth/mediawiki/call
 	const user = JSON.parse(JSON.stringify(req.user));
 	console.log(user);
 	res.end(PopupTools.popupResponse({ user }));
-
 })
 
 router.get('/video-cut-tool-back-end/auth/mediawiki/callback', passport.authenticate('mediawiki', {
@@ -297,7 +217,6 @@ router.get('/video-cut-tool-back-end/auth/mediawiki/callback', passport.authenti
 	const user = JSON.parse(JSON.stringify(req.user));
 	console.log(user);
 	res.end(PopupTools.popupResponse({ user }));
-
 })
 
 router.get('/auth/mediawiki/callback', passport.authenticate('mediawiki', {
@@ -306,7 +225,6 @@ router.get('/auth/mediawiki/callback', passport.authenticate('mediawiki', {
 	const user = JSON.parse(JSON.stringify(req.user));
 	console.log(user);
 	res.end(PopupTools.popupResponse({ user }));
-
 })
 
 module.exports = router;

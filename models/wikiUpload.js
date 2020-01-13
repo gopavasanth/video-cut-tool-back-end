@@ -5,9 +5,6 @@ import path from 'path'
 import mimetypes from 'mime-types'
 import async from 'async'
 const config = require('../config');
-const COMMONS_BASE_URL = 'https://commons.wikimedia.org/w/api.php'
-const username = process.env.WIKICOMMONS_BOT_USERNAME
-const password = process.env.WIKICOMMONS_BOT_PASSWORD
 
 export const uploadFileToWikiCommons = (req, res, next) => {
   const {
@@ -21,7 +18,6 @@ export const uploadFileToWikiCommons = (req, res, next) => {
     date,
   } = req.body
   let { file } = req.body
-  let fileMime
   let errors = []
 
   if (file) {

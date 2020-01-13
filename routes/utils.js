@@ -5,7 +5,6 @@ const async = require('async');
 const { exec } = require('child_process');
 
 function move(oldPath, newPath, callback) {
-
     fs.rename(oldPath, newPath, function (err) {
         if (err) {
             if (err.code === 'EXDEV') {
@@ -38,7 +37,6 @@ function moveVideosToPublic(videoPaths, callback) {
     const newPaths = [];
     videoPaths.forEach(video => {
         moveFuncArray.push((cb) => {
-
             const newPath = path.join(__dirname, '../', 'public', `publicVideo-${Date.now()}.${video.split('.').pop()}`);
             newPaths.push(newPath);
             move(video, newPath, (err) => {
@@ -68,31 +66,25 @@ function downloadVideo(url, callback) {
 		console.log("downloading success")
 		return callback(null, videoDownloadPath);
 	})
-	// setTimeout(() => {
-	// 	callback(null, path.join(__dirname, '/videos/', 'video_1565177367223_7478.webm'))
-	// }, 100);
 }
 
 function trimVideos(videoPath, trims, mode, callback) {
 	const trimFuncArray = [];
 	const trimsLocations = [];
 	const videoExtension = videoPath.split('.').pop().toLowerCase();
-	// A list to concat the videos
-	const videosListFileName = path.join(__dirname, `filelist-${Date.now()}`);
 
-	trims.forEach((element, index) => {
+	trims.forEach((element) => {
 		trimFuncArray.push((callback) => {
 			const videoLocation = path.join(__dirname, `trimmed-video-${Date.now()}.${videoExtension}`);
 			trimsLocations.push(videoLocation);
 			var cmd = 'ffmpeg -i ' + videoPath + ' -ss ' + element.from + ' -to ' + element.to + ' -async 1 -strict 2 ' + videoLocation;
 			console.log("Command: " + cmd);
-			exec(cmd, (error, stdout, stderr) => {
+			exec(cmd, (error) => {
 				if (error !== null) {
 					console.log(error)
 					console.log(`Trimminng Process error !`);
 					return callback(error);
 				}
-				// console.log('trimmed single video', single_trimmed_video)
 				callback(null, videoLocation);
 			})
 		})
@@ -103,7 +95,6 @@ function trimVideos(videoPath, trims, mode, callback) {
 		console.log('mode from trim', mode)
 		return callback(null, trimsLocations);
 	})
-
 }
 
 function concatVideos(videoPaths, callback) {
@@ -114,7 +105,7 @@ function concatVideos(videoPaths, callback) {
 
 	const concatedLocation = path.join(__dirname, `concated-video-${Date.now()}.${videoPaths[0].split('.').pop()}`);
 	var cmd = `ffmpeg -f concat -safe 0 -i ${videosListFileName} -c copy ${concatedLocation}`;
-	exec(cmd, (err, stdout, stderr) => {
+	exec(cmd, (err) => {
 		fs.unlink(videosListFileName, () => { });
 		if (err) return callback(err);
 		return callback(null, concatedLocation);

@@ -6,15 +6,7 @@ const UserSchema = new Schema({
   username: String,
   mediawikiId: String,
   mediawikiToken: { type: String, select: false },
-  mediawikiTokenSecret: { type: String, select: false },
-  email: String,
-  password: String,
-  role: {
-    type: String,
-    default: 'normal',
-  },
-  firstName: String,
-  lastName: String
+  mediawikiTokenSecret: { type: String, select: false }
 })
 
 UserSchema.pre('save', function (next) {

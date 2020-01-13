@@ -1,9 +1,6 @@
 const request = require('request')
 const OAuth = require('oauth-1.0a')
 const crypto = require('crypto')
-const { exec } = require('child_process')
-const fs = require('fs');
-const { out_location } = require('../routes/index');
 var config = require('../config');
 
 const oauth = OAuth({
