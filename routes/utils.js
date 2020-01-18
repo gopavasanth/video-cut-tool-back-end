@@ -57,11 +57,15 @@ function deleteFiles(files) {
 	})
 }
 
-function downloadVideo(url, callback) {
-	let videoExtension = url.split('.').pop().toLowerCase();
-	var videoDownloadPath = path.join(__dirname, `video_${Date.now()}_${parseInt(Math.random() * 10000)}` + '.' + videoExtension);
-	var cmd = ("ffmpeg -y -i " + url + " -vcodec copy -acodec copy " + videoDownloadPath);
+function downloadVideo(url, name, callback) {
+	if ( name == null ){
+		name = url;
+	}
+	let videoExtension = name.split('.').pop().toLowerCase();
+	var videoDownloadPath = path.join(__dirname,`video_${Date.now()}_${parseInt(Math.random() * 10000)}` + '.' + videoExtension);
+	var cmd = `ffmpeg -y -i "${url}" -vcodec copy -acodec copy "${videoDownloadPath}"`
 	exec(cmd, (err) => {
+		console.error(err)
 		if (err) return callback(err);
 		console.log("downloading success")
 		return callback(null, videoDownloadPath);
@@ -77,7 +81,7 @@ function trimVideos(videoPath, trims, mode, callback) {
 		trimFuncArray.push((callback) => {
 			const videoLocation = path.join(__dirname, `trimmed-video-${Date.now()}.${videoExtension}`);
 			trimsLocations.push(videoLocation);
-			var cmd = 'ffmpeg -i ' + videoPath + ' -ss ' + element.from + ' -to ' + element.to + ' -async 1 -strict 2 ' + videoLocation;
+			var cmd = `ffmpeg -i "${videoPath}" -ss ${element.from} -to ${element.to} -async 1 -strict 2 "${videoLocation}"`;
 			console.log("Command: " + cmd);
 			exec(cmd, (error) => {
 				if (error !== null) {
@@ -104,7 +108,7 @@ function concatVideos(videoPaths, callback) {
 	})
 
 	const concatedLocation = path.join(__dirname, `concated-video-${Date.now()}.${videoPaths[0].split('.').pop()}`);
-	var cmd = `ffmpeg -f concat -safe 0 -i ${videosListFileName} -c copy ${concatedLocation}`;
+	var cmd = `ffmpeg -f concat -safe 0 -i "${videosListFileName}" -c copy "${concatedLocation}"`;
 	exec(cmd, (err) => {
 		fs.unlink(videosListFileName, () => { });
 		if (err) return callback(err);
@@ -124,16 +128,16 @@ function rotateVideos(videosPaths, RotateValue, callback) {
 			rotatesLocations.push(rotatedLocation);
 			if (RotateValue == 0){
 				// 90 degree clock wise rotate
-				var cmd = 'ffmpeg -i ' + videoPath + ' -vf "transpose=1" ' + rotatedLocation;	
+				var cmd = `ffmpeg -i "${videoPath}" -vf "transpose=1" "${rotatedLocation}"`;	
 			} else if (RotateValue==1) {
 				// 180 degree rotate
-				var cmd = 'ffmpeg -i ' + videoPath + ' -vf "transpose=2,transpose=2" '  + rotatedLocation;
+				var cmd = `ffmpeg -i "${videoPath}" -vf "transpose=2,transpose=2" "${rotatedLocation}"`;
 			} else if (RotateValue ==2){
 				// 270 degree rotate
-				var cmd = 'ffmpeg -i ' + videoPath + ' -vf "transpose=' + RotateValue + '" ' + rotatedLocation;
+				var cmd = `ffmpeg -i "${videoPath}" -vf "transpose=${RotateValue}" "${rotatedLocation}"`;
 			} else {
 				// 360 degree (Same as intial video)
-				var cmd = 'ffmpeg -i ' + videoPath + ' -vf "transpose=4" ' + rotatedLocation;
+				var cmd = `ffmpeg -i "${videoPath}" -vf "transpose=4" "${rotatedLocation}"`;
 			}
 			console.log("Command" + cmd);
 			exec(cmd, (err) => {
@@ -159,7 +163,7 @@ function cropVideos(videosPaths, out_width, out_height, x_value, y_value, callba
 			const croppedLocation = path.join(__dirname, `cropped-video-${Date.now()}.${videoExtension}`);
 			cropsLocations.push(croppedLocation);
 
-			var cmd = `ffmpeg -i ${videoPath} -filter:v "crop=${out_width / 100}*in_w:${out_height / 100}*in_h:${x_value / 100}*in_w:${y_value / 100}*in_h" -c:a copy ${croppedLocation}`
+			var cmd = `ffmpeg -i "${videoPath}" -filter:v "crop=${out_width / 100}*in_w:${out_height / 100}*in_h:${x_value / 100}*in_w:${y_value / 100}*in_h" -c:a copy "${croppedLocation}"`
 			console.log("Command" + cmd);
 			exec(cmd, (err) => {
 				if (err) return cb(err);
@@ -185,7 +189,7 @@ function removeAudioFromVideos(videosPaths, callback) {
 			const videoExtension = videoPath.split('.').pop().toLowerCase();
 			const clearedLocation = path.join(__dirname, `cleared-video-${Date.now()}.${videoExtension}`);
 			clearedLocations.push(clearedLocation);
-			const cmd = `ffmpeg -i ${videoPath} -an ${clearedLocation}`;
+			const cmd = `ffmpeg -i "${videoPath}" -an "${clearedLocation}"`;
 			exec(cmd, (err) => {
 				if (err) return cb(err);
 				return cb();

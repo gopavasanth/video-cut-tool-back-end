@@ -11,6 +11,9 @@
 # production
 /build
 
+# tmp directory
+tmp/
+
 # misc
 .DS_Store
 .env.local
@@ -32,3 +35,7 @@ routes/cropped/
 routes/trimmed/
 routes/rotate/
 public/
+
+#any downloaded videos
+*.webm
+*.mp4

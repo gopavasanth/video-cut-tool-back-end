@@ -52,6 +52,7 @@ function sendCallback (req, res) {
 	var upload = true;
 	var title = req.body.title;
 	var RotateValue = req.body.RotateValue;
+	const videoName = req.body.videoName; // used for uploads
 
 	// Video Settings
 	var rotateVideo = req.body.rotateVideo;
@@ -70,11 +71,11 @@ function sendCallback (req, res) {
 	console.log("Video trim in to single video : " + trimIntoSingleVideo);
 	console.log("New video Title : " + title)
 	console.log("Rotate Video : " + RotateValue);
-	console.log('downloading video')
+	console.log('downloading video ' + url)
 
 	// This fetches the video into the server.
 	// Params: videoURL -> videoPath
-	utils.downloadVideo(url, (err, videoPath) => {
+	utils.downloadVideo(url, videoName, (err, videoPath) => {
 		if (err || !videoPath || !fs.existsSync(videoPath)) {
 			console.log(err)
 			return res.status(400).send('Error downloading video');
@@ -184,9 +185,35 @@ function sendCallback (req, res) {
 		})
 	})
 }
+
+function uploadFileSendCallback(req, res){
+	console.log('Upload sent')
+	if('video' in req.files){
+		let data;
+		try {
+			data = JSON.parse(req.body.data);
+		} catch(SyntaxError){
+			console.log("There was an issue with the data sent.");
+			console.log(req.body.data);
+			return res.status(500).send('Something has gone wrong with the video you uploaded. Please try again.')
+		}
+		for(let key in data){
+			req.body[key] = data[key]
+		}
+		req.body.inputVideoUrl = req.files.video.tempFilePath
+		req.body.videoName = req.files.video.name
+		sendCallback(req, res)
+	} else {
+		return res.status(400).send('There was no video specified.')
+	}
+}
+
 router.post('/video-cut-tool-back-end/video-cut-tool-back-end/send', sendCallback);
+router.post('/video-cut-tool-back-end/video-cut-tool-back-end/send/upload', uploadFileSendCallback);
 router.post('/video-cut-tool-back-end/send', sendCallback);
+router.post('/video-cut-tool-back-end/send/upload', uploadFileSendCallback)
 router.post('/send', sendCallback);
+router.post('/send/upload', uploadFileSendCallback);
 
 router.get('/download/public/:videopath', function(req, res){
 	const file = 'public/'+req.params.videopath;
