@@ -28,7 +28,12 @@ app.use(cookieParser());
 
 // Use CORS and File Upload modules here
 app.use(cors());
-app.use(fileUpload());
+app.use(fileUpload({
+  useTempFiles : true,
+  tempFileDir : 'tmp/', // so that they're publicly accessable
+  limits: { fileSize: 50 * 1024 * 1024 },
+  abortOnLimit: true
+}));
 
 app.use( passport.initialize() );
 app.use( passport.session() );
