@@ -75,21 +75,26 @@ function sendCallback (req, res) {
 
 	// This fetches the video into the server.
 	// Params: videoURL -> videoPath
-	utils.downloadVideo(url, videoName, (err, videoPath) => {
+	utils.downloadVideo(url, videoName, (err, videoPath, videoDuration) => {
 		if (err || !videoPath || !fs.existsSync(videoPath)) {
 			console.log(err)
 			return res.status(400).send('Error downloading video');
 		}
 		const processFuncArray = [];
+		let currentTimecode = 0;
+		let endVideoDuration = 0;
 
 		// if the trimVideo is true, this function trims video based on trims array
 		// Params: videoPath, trims[]
 		if (trimVideo) {
 			processFuncArray.push((cb) => {
 				console.log('trimming')
-				utils.trimVideos(videoPath, trims, mode, (err, videosLocation) => {
+				const processNum = trims.length > 1 ? processFuncArray.length-1 : processFuncArray.length;
+				utils.trimVideos(videoPath, processNum, trims, mode, (err, videosLocation, newCurrentTimecode) => {
 					utils.deleteFiles([videoPath]);
 					if (err) return cb(err);
+					endVideoDuration = newCurrentTimecode * processFuncArray.length;
+					currentTimecode = newCurrentTimecode;
 					return cb(null, videosLocation);
 				})
 			})
@@ -97,6 +102,7 @@ function sendCallback (req, res) {
 			// Just map to an array of paths
 			processFuncArray.push((cb) => {
 				setTimeout(() => {
+					endVideoDuration = videoDuration * (processFuncArray.length-1);
 					return cb(null, [videoPath]);
 				}, 100);
 			})
@@ -107,9 +113,10 @@ function sendCallback (req, res) {
 		if (cropVideo) {
 			processFuncArray.push((videoPaths, cb) => {
 				console.log('cropping')
-				utils.cropVideos(videoPaths, out_width, out_height, x_value, y_value, (err, croppedPaths) => {
+				utils.cropVideos(videoPaths, endVideoDuration, currentTimecode, out_width, out_height, x_value, y_value, (err, croppedPaths, newCurrentTimecode) => {
 					utils.deleteFiles(videoPaths);
 					if (err) return cb(err);
+					currentTimecode = newCurrentTimecode;
 					return cb(null, croppedPaths)
 				})
 			})
@@ -119,9 +126,11 @@ function sendCallback (req, res) {
 		// Params: videoPaths, RotateValue
 		if (rotateVideo) {
 			processFuncArray.push((videoPaths, cb) => {
-				utils.rotateVideos(videoPaths, RotateValue, (err, rotatedVideos) => {
+				console.log('rotating');
+				utils.rotateVideos(videoPaths, endVideoDuration, currentTimecode, RotateValue, (err, rotatedVideos, newCurrentTimecode) => {
 					utils.deleteFiles(videoPaths);
 					if (err) return cb(err);
+					currentTimecode = newCurrentTimecode;
 					return cb(null, rotatedVideos);
 				})
 			})
@@ -131,9 +140,11 @@ function sendCallback (req, res) {
 		// Params: videoPaths
 		if (mode === "single" && trims.length > 1) {
 			processFuncArray.push((videoPaths, cb) => {
-				utils.concatVideos(videoPaths, (err, concatedPath) => {
+				console.log('doing concat');
+				utils.concatVideos(videoPaths, endVideoDuration, currentTimecode, (err, concatedPath, newCurrentTimecode) => {
 					utils.deleteFiles(videoPaths);
 					if (err) return cb(err);
+					currentTimecode = newCurrentTimecode;
 					return cb(null, [concatedPath]);
 				})
 			})
@@ -144,7 +155,7 @@ function sendCallback (req, res) {
 		if (disableAudio) {
 			processFuncArray.push((videoPaths, cb) => {
 				console.log('remove audio')
-				utils.removeAudioFromVideos(videoPaths, (err, clearedPaths) => {
+				utils.removeAudioFromVideos(videoPaths, endVideoDuration, currentTimecode, (err, clearedPaths) => {
 					utils.deleteFiles(videoPaths);
 					if (err) return cb(err);
 					return cb(null, clearedPaths);

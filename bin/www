@@ -7,6 +7,7 @@
 var app = require('../app');
 var debug = require('debug')('server:server');
 var http = require('http');
+const eventEmitter = require('../eventEmitter');
 
 /**
  * Get port from environment and store in Express.
@@ -20,6 +21,16 @@ app.set('port', port);
  */
 
 var server = http.createServer(app);
+
+/**
+ * Create socket.io server
+ */
+
+const io = require('socket.io')(server);
+eventEmitter.on('progress:update', data => {
+  // console.log(data);
+  io.emit('progress:update', data);
+});
 
 /**
  * Listen on provided port, on all network interfaces.
