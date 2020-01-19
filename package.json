@@ -1,6 +1,6 @@
 {
-  "name": "server",
-  "version": "0.0.0",
+  "name": "video-cut-tool-back-end",
+  "version": "0.0.1",
   "private": true,
   "scripts": {
     "start": "node ./bin/www"
@@ -15,12 +15,10 @@
     "debug": "~2.6.9",
     "ejs": "^2.6.1",
     "express": "~4.16.0",
-    "express-fileupload": "^1.1.4",
+    "express-fileupload": "^1.1.6",
     "express-session": "^1.16.1",
     "http-errors": "~1.6.2",
     "jade": "~1.11.0",
-    "listr": "^0.14.3",
-    "mongodb": "^1.4.40",
     "mongoose": "^5.6.6",
     "morgan": "~1.9.0",
     "oauth-1.0a": "^2.2.6",
@@ -29,7 +27,6 @@
     "popup-tools": "^1.0.2",
     "request": "^2.88.0",
     "serve-favicon": "^2.5.0",
-    "session": "^0.1.0",
-    "shelljs": "^0.8.3"
+    "session": "^0.1.0"
   }
 }
