@@ -21,6 +21,7 @@ app.set('port', port);
  */
 
 var server = http.createServer(app);
+server.setTimeout(0);
 
 /**
  * Create socket.io server
