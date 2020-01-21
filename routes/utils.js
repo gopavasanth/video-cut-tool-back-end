@@ -56,10 +56,12 @@ function move(oldPath, newPath, callback) {
 
 function moveVideosToPublic(videoPaths, callback) {
     const moveFuncArray = [];
-    const newPaths = [];
-    videoPaths.forEach(video => {
+	const newPaths = [];
+	const currentDate = Date.now();
+    videoPaths.forEach((video,index) => {
         moveFuncArray.push((cb) => {
-            const newPath = path.join(__dirname, '../', 'public', `publicVideo-${Date.now()}.${video.split('.').pop()}`);
+			const videoName = `${currentDate}-${index}.${video.split('.').pop()}`;
+            const newPath = path.join(__dirname, '../', 'public', `publicVideo-${videoName}`);
             newPaths.push(newPath);
             move(video, newPath, (err) => {
                 if (err) return cb(err);      
@@ -342,5 +344,6 @@ module.exports = {
     cropVideos,
     rotateVideos,
     concatVideos,
-    trimVideos,
+	trimVideos,
+	updateProgressEmit,
 }
