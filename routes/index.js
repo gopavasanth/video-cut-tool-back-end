@@ -50,9 +50,9 @@ function sendCallback (req, res) {
 	const trimVideo = req.body.trimVideo;
 	var user = req.body.user;
 	var upload = true;
-	var title = req.body.title;
 	var RotateValue = req.body.RotateValue;
 	const videoName = req.body.videoName; // used for uploads
+	const publicVideos = req.body.videos;
 
 	// Video Settings
 	var rotateVideo = req.body.rotateVideo;
@@ -69,132 +69,135 @@ function sendCallback (req, res) {
 	console.log("Video Crop : " + cropVideo);
 	console.log("Video trim into multiple videos : " + trimIntoMultipleVideos);
 	console.log("Video trim in to single video : " + trimIntoSingleVideo);
-	console.log("New video Title : " + title)
 	console.log("Rotate Video : " + RotateValue);
 	console.log('downloading video ' + url)
 
 	// This fetches the video into the server.
 	// Params: videoURL -> videoPath
-	utils.downloadVideo(url, videoName, (err, videoPath, videoDuration) => {
-		if (err || !videoPath || !fs.existsSync(videoPath)) {
-			console.log(err)
-			return res.status(400).send('Error downloading video');
-		}
-		const processFuncArray = [];
-		let currentTimecode = 0;
-		let endVideoDuration = 0;
+	if (!upload) {
+		utils.downloadVideo(url, videoName, (err, videoPath, videoDuration) => {
+			if (err || !videoPath || !fs.existsSync(videoPath)) {
+				console.log(err)
+				return res.status(400).send('Error downloading video');
+			}
+			const processFuncArray = [];
+			let currentTimecode = 0;
+			let endVideoDuration = 0;
 
-		// if the trimVideo is true, this function trims video based on trims array
-		// Params: videoPath, trims[]
-		if (trimVideo) {
-			processFuncArray.push((cb) => {
-				console.log('trimming')
-				const processNum = trims.length > 1 ? processFuncArray.length-1 : processFuncArray.length;
-				utils.trimVideos(videoPath, processNum, trims, mode, (err, videosLocation, newCurrentTimecode) => {
-					utils.deleteFiles([videoPath]);
-					if (err) return cb(err);
-					endVideoDuration = newCurrentTimecode * processFuncArray.length;
-					currentTimecode = newCurrentTimecode;
-					return cb(null, videosLocation);
+			// if the trimVideo is true, this function trims video based on trims array
+			// Params: videoPath, trims[]
+			if (trimVideo) {
+				processFuncArray.push((cb) => {
+					console.log('trimming')
+					const processNum = trims.length > 1 ? processFuncArray.length-1 : processFuncArray.length;
+					utils.trimVideos(videoPath, processNum, trims, mode, (err, videosLocation, newCurrentTimecode) => {
+						utils.deleteFiles([videoPath]);
+						if (err) return cb(err);
+						endVideoDuration = newCurrentTimecode * processFuncArray.length;
+						currentTimecode = newCurrentTimecode;
+						return cb(null, videosLocation);
+					})
 				})
-			})
-		} else {
-			// Just map to an array of paths
-			processFuncArray.push((cb) => {
-				setTimeout(() => {
-					endVideoDuration = videoDuration * (processFuncArray.length-1);
-					return cb(null, [videoPath]);
-				}, 100);
-			})
-		}
-
-		// if the CropVideo is true, 
-		// Params: videoPaths, out_width, out_height, x_value, y_value
-		if (cropVideo) {
-			processFuncArray.push((videoPaths, cb) => {
-				console.log('cropping')
-				utils.cropVideos(videoPaths, endVideoDuration, currentTimecode, out_width, out_height, x_value, y_value, (err, croppedPaths, newCurrentTimecode) => {
-					utils.deleteFiles(videoPaths);
-					if (err) return cb(err);
-					currentTimecode = newCurrentTimecode;
-					return cb(null, croppedPaths)
+			} else {
+				// Just map to an array of paths
+				processFuncArray.push((cb) => {
+					setTimeout(() => {
+						endVideoDuration = videoDuration * (processFuncArray.length-1);
+						return cb(null, [videoPath]);
+					}, 100);
 				})
-			})
-		}
+			}
 
-		// if the rotateVideo is true, this rotates the video to 90 degree clock-wise
-		// Params: videoPaths, RotateValue
-		if (rotateVideo) {
-			processFuncArray.push((videoPaths, cb) => {
-				console.log('rotating');
-				utils.rotateVideos(videoPaths, endVideoDuration, currentTimecode, RotateValue, (err, rotatedVideos, newCurrentTimecode) => {
-					utils.deleteFiles(videoPaths);
-					if (err) return cb(err);
-					currentTimecode = newCurrentTimecode;
-					return cb(null, rotatedVideos);
+			// if the CropVideo is true, 
+			// Params: videoPaths, out_width, out_height, x_value, y_value
+			if (cropVideo) {
+				processFuncArray.push((videoPaths, cb) => {
+					console.log('cropping')
+					utils.cropVideos(videoPaths, endVideoDuration, currentTimecode, out_width, out_height, x_value, y_value, (err, croppedPaths, newCurrentTimecode) => {
+						utils.deleteFiles(videoPaths);
+						if (err) return cb(err);
+						currentTimecode = newCurrentTimecode;
+						return cb(null, croppedPaths)
+					})
 				})
-			})
-		}
+			}
 
-		// Based on the video mode, If single this concatinates the trimmed videos into one.
-		// Params: videoPaths
-		if (mode === "single" && trims.length > 1) {
-			processFuncArray.push((videoPaths, cb) => {
-				console.log('doing concat');
-				utils.concatVideos(videoPaths, endVideoDuration, currentTimecode, (err, concatedPath, newCurrentTimecode) => {
-					utils.deleteFiles(videoPaths);
-					if (err) return cb(err);
-					currentTimecode = newCurrentTimecode;
-					return cb(null, [concatedPath]);
+			// if the rotateVideo is true, this rotates the video to 90 degree clock-wise
+			// Params: videoPaths, RotateValue
+			if (rotateVideo) {
+				processFuncArray.push((videoPaths, cb) => {
+					console.log('rotating');
+					utils.rotateVideos(videoPaths, endVideoDuration, currentTimecode, RotateValue, (err, rotatedVideos, newCurrentTimecode) => {
+						utils.deleteFiles(videoPaths);
+						if (err) return cb(err);
+						currentTimecode = newCurrentTimecode;
+						return cb(null, rotatedVideos);
+					})
 				})
-			})
-		}
+			}
 
-		// This disables the audio in the video.
-		// Params: videoPaths
-		if (disableAudio) {
-			processFuncArray.push((videoPaths, cb) => {
-				console.log('remove audio')
-				utils.removeAudioFromVideos(videoPaths, endVideoDuration, currentTimecode, (err, clearedPaths) => {
-					utils.deleteFiles(videoPaths);
-					if (err) return cb(err);
-					return cb(null, clearedPaths);
+			// Based on the video mode, If single this concatinates the trimmed videos into one.
+			// Params: videoPaths
+			if (mode === "single" && trims.length > 1) {
+				processFuncArray.push((videoPaths, cb) => {
+					console.log('doing concat');
+					utils.concatVideos(videoPaths, endVideoDuration, currentTimecode, (err, concatedPath, newCurrentTimecode) => {
+						utils.deleteFiles(videoPaths);
+						if (err) return cb(err);
+						currentTimecode = newCurrentTimecode;
+						return cb(null, [concatedPath]);
+					})
 				})
-			})
-		}
-		console.log('starting processing')
+			}
 
-		// With Async Waterfall method all the required operations will start
-		async.waterfall(processFuncArray, (err, result) => {
-			console.log(err, result)
-			console.log('=================== result ==================');
-			utils.moveVideosToPublic(result, (err, newPaths) => {
-				console.log('moved to public', newPaths)
-				if (err) return res.status(400).send('something went wrong');
-				if (!upload) {
+			// This disables the audio in the video.
+			// Params: videoPaths
+			if (disableAudio) {
+				processFuncArray.push((videoPaths, cb) => {
+					console.log('remove audio')
+					utils.removeAudioFromVideos(videoPaths, endVideoDuration, currentTimecode, (err, clearedPaths) => {
+						utils.deleteFiles(videoPaths);
+						if (err) return cb(err);
+						return cb(null, clearedPaths);
+					})
+				})
+			}
+			console.log('starting processing')
+
+			// With Async Waterfall method all the required operations will start
+			async.waterfall(processFuncArray, (err, result) => {
+				console.log(err, result)
+				console.log('=================== result ==================');
+				utils.moveVideosToPublic(result, (err, newPaths) => {
+					console.log('moved to public', newPaths)
+					if (err) return res.status(400).send('something went wrong');
 					return res.json({ videos: newPaths.map((p) => `public/${p.split('public/').pop()}`) });
-				}
-
-				// This modules supports to upload the result of the operations to the Commons
-				wikiUpload.uploadFileToMediawiki(
-					user.mediawikiToken,
-					user.mediawikiTokenSecret,
-					fs.createReadStream(newPaths[0]),
-					{
-						filename: title,
-						text: title,
-					},
-					(err, response) => {
-						if (err) {
-							console.log(err);
-							return res.status(400).send('Something went wrong while uploading the video')
-						}
-						res.send(response);
-					}
-				)
+				})
 			})
 		})
-	})
+	}
+	else {
+		publicVideos.map(video => {
+			// This modules supports to upload the result of the operations to the Commons
+			wikiUpload.uploadFileToMediawiki(
+				user.mediawikiToken,
+				user.mediawikiTokenSecret,
+				fs.createReadStream(video.path),
+				{
+					filename: video.title,
+					text: video.title,
+					comment: video.comment
+				},
+				(err, response) => {
+					if (err) {
+						console.log(err);
+						return res.status(400).send('Something went wrong while uploading the video')
+					}
+					res.send(response);
+				}
+			)
+		})
+	}
 }
 
 function uploadFileSendCallback(req, res){

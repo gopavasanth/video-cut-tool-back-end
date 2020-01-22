@@ -34,7 +34,6 @@ routes/videos/
 routes/cropped/
 routes/trimmed/
 routes/rotate/
-public/
 
 #any downloaded videos
 *.webm
