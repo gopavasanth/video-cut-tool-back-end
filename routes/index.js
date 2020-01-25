@@ -177,6 +177,7 @@ function sendCallback (req, res) {
 		})
 	}
 	else {
+		let responses = []
 		publicVideos.map(video => {
 			// This modules supports to upload the result of the operations to the Commons
 			wikiUpload.uploadFileToMediawiki(
@@ -185,7 +186,7 @@ function sendCallback (req, res) {
 				fs.createReadStream(video.path),
 				{
 					filename: video.title,
-					text: video.title,
+					text: video.text,
 					comment: video.comment
 				},
 				(err, response) => {
@@ -193,10 +194,11 @@ function sendCallback (req, res) {
 						console.log(err);
 						return res.status(400).send('Something went wrong while uploading the video')
 					}
-					res.send(response);
+					responses.push(response);
 				}
 			)
-		})
+		});
+		res.send(responses);
 	}
 }
 
@@ -234,7 +236,16 @@ router.get('/download/public/:videopath', function(req, res){
 	res.download(file); // Set disposition and send it.
 });
 
+router.get('/video-cut-tool-back-end/download/public/:videopath', function(req, res){
+	const file = 'public/'+req.params.videopath;
+	res.download(file); // Set disposition and send it.
+});
+
 router.get('/insert', function (req, res) {
+	res.render('index');
+});
+
+router.get('/video-cut-tool-back-end/insert', function (req, res) {
 	res.render('index');
 });
 
