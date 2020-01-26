@@ -94,7 +94,9 @@ function downloadVideo(url, name, callback) {
 		console.log("downloading success")
 
 		const durationRegExp = new RegExp(/Duration: (\d{2}:\d{2}:\d{2}.\d{2})/);
-		let videoDuration = convertTimeToMs(stdout.match(durationRegExp)[1].split(':'));
+		let videoDuration = stderr.length === 0
+			? convertTimeToMs(stdout.match(durationRegExp)[1].split(':'))
+			: convertTimeToMs(stderr.match(durationRegExp)[1].split(':'));
 
 		return callback(null, videoDownloadPath, videoDuration);
 	})
@@ -129,6 +131,18 @@ function trimVideos(videoPath, taskNum, trims, mode, callback) {
 			const cmd = spawn('ffmpeg', ['-i', videoPath, '-ss', element.from, '-to', element.to, '-async', 1, '-strict', 2, videoLocation]);
 			const timeRegExp = new RegExp(/time=(\d{2}:\d{2}:\d{2}.\d{2})/);
 
+			cmd.stdout.on('data', (data) => {
+				const decodedData = new Buffer.from(data, 'base64').toString('utf8');
+				if (timeRegExp.test(decodedData)) {
+					if (trims.length === 1 || trims.length > 1 && index === 0) {
+						time = convertTimeToMs(decodedData.match(timeRegExp)[1].split(':'));
+					}
+					if (trims.length > 1 && index > 0) {
+						time = newCurrentTimecode + convertTimeToMs(decodedData.match(timeRegExp)[1].split(':'));
+					}
+					updateProgressEmit(time, newVideoDuration * taskNum, 'trimming');
+				}
+			});
 			cmd.stderr.on('data', (data) => {
 				const decodedData = new Buffer.from(data, 'base64').toString('utf8');
 				if (timeRegExp.test(decodedData)) {
@@ -172,6 +186,15 @@ function concatVideos(videoPaths, videoDuration, currentTimecode, callback) {
 	const timeRegExp = new RegExp(/time=(\d{2}:\d{2}:\d{2}.\d{2})/);
 	let newCurrentTimecode = 0;
 
+	cmd.stdout.on('data', (data) => {
+		const decodedData = new Buffer.from(data, 'base64').toString('utf8');
+
+		if (timeRegExp.test(decodedData)) {
+			let time = convertTimeToMs(decodedData.match(timeRegExp)[1].split(':'));
+			newCurrentTimecode = time + currentTimecode;
+			updateProgressEmit(newCurrentTimecode, videoDuration, 'concating');
+		}
+	});
 	cmd.stderr.on('data', (data) => {
 		const decodedData = new Buffer.from(data, 'base64').toString('utf8');
 
@@ -229,6 +252,15 @@ function rotateVideos(videosPaths, videoDuration, currentTimecode, RotateValue, 
 
 			const timeRegExp = new RegExp(/time=(\d{2}:\d{2}:\d{2}.\d{2})/);
 
+			cmd.stdout.on('data', (data) => {
+				const decodedData = new Buffer.from(data, 'base64').toString('utf8');
+
+				if (timeRegExp.test(decodedData)) {
+					let time = convertTimeToMs(decodedData.match(timeRegExp)[1].split(':'));
+					newCurrentTimecode = time + currentTimecode;
+					updateProgressEmit(newCurrentTimecode, videoDuration, 'rotating');
+				}
+			});
 			cmd.stderr.on('data', (data) => {
 				const decodedData = new Buffer.from(data, 'base64').toString('utf8');
 
@@ -270,6 +302,15 @@ function cropVideos(videosPaths, videoDuration, currentTimecode, out_width, out_
 
 			const timeRegExp = new RegExp(/time=(\d{2}:\d{2}:\d{2}.\d{2})/);
 
+			cmd.stdout.on('data', (data) => {
+				const decodedData = new Buffer.from(data, 'base64').toString('utf8');
+
+				if (timeRegExp.test(decodedData)) {
+					let time = convertTimeToMs(decodedData.match(timeRegExp)[1].split(':'));
+					newCurrentTimecode = time + currentTimecode;
+					updateProgressEmit(newCurrentTimecode, videoDuration, 'cropping');
+				}
+			});
 			cmd.stderr.on('data', (data) => {
 				const decodedData = new Buffer.from(data, 'base64').toString('utf8');
 
@@ -310,6 +351,14 @@ function removeAudioFromVideos(videosPaths, videoDuration, currentTimecode, call
 
 			const timeRegExp = new RegExp(/time=(\d{2}:\d{2}:\d{2}.\d{2})/);
 
+			cmd.stdout.on('data', (data) => {
+				const decodedData = new Buffer.from(data, 'base64').toString('utf8');
+
+				if (timeRegExp.test(decodedData)) {
+					let time = convertTimeToMs(decodedData.match(timeRegExp)[1].split(':'));
+					updateProgressEmit(time + currentTimecode, videoDuration, 'losing audio');
+				}
+			});
 			cmd.stderr.on('data', (data) => {
 				const decodedData = new Buffer.from(data, 'base64').toString('utf8');
 
