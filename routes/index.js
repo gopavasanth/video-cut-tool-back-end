@@ -89,7 +89,7 @@ function sendCallback (req, res) {
 			if (trimVideo) {
 				processFuncArray.push((cb) => {
 					console.log('trimming')
-					const processNum = trims.length > 1 ? processFuncArray.length-1 : processFuncArray.length;
+					const processNum = processFuncArray.length;
 					utils.trimVideos(videoPath, processNum, trims, mode, (err, videosLocation, newCurrentTimecode) => {
 						utils.deleteFiles([videoPath]);
 						if (err) return cb(err);
@@ -113,7 +113,7 @@ function sendCallback (req, res) {
 			if (cropVideo) {
 				processFuncArray.push((videoPaths, cb) => {
 					console.log('cropping')
-					utils.cropVideos(videoPaths, endVideoDuration, currentTimecode, out_width, out_height, x_value, y_value, (err, croppedPaths, newCurrentTimecode) => {
+					utils.cropVideos(videoPaths, processFuncArray.length-1, endVideoDuration, currentTimecode, out_width, out_height, x_value, y_value, (err, croppedPaths, newCurrentTimecode) => {
 						utils.deleteFiles(videoPaths);
 						if (err) return cb(err);
 						currentTimecode = newCurrentTimecode;
@@ -127,7 +127,7 @@ function sendCallback (req, res) {
 			if (rotateVideo) {
 				processFuncArray.push((videoPaths, cb) => {
 					console.log('rotating');
-					utils.rotateVideos(videoPaths, endVideoDuration, currentTimecode, RotateValue, (err, rotatedVideos, newCurrentTimecode) => {
+					utils.rotateVideos(videoPaths, processFuncArray.length-1, endVideoDuration, currentTimecode, RotateValue, (err, rotatedVideos, newCurrentTimecode) => {
 						utils.deleteFiles(videoPaths);
 						if (err) return cb(err);
 						currentTimecode = newCurrentTimecode;
@@ -141,7 +141,7 @@ function sendCallback (req, res) {
 			if (mode === "single" && trims.length > 1) {
 				processFuncArray.push((videoPaths, cb) => {
 					console.log('doing concat');
-					utils.concatVideos(videoPaths, endVideoDuration, currentTimecode, (err, concatedPath, newCurrentTimecode) => {
+					utils.concatVideos(videoPaths, processFuncArray.length-1, endVideoDuration, currentTimecode, (err, concatedPath, newCurrentTimecode) => {
 						utils.deleteFiles(videoPaths);
 						if (err) return cb(err);
 						currentTimecode = newCurrentTimecode;
@@ -155,7 +155,7 @@ function sendCallback (req, res) {
 			if (disableAudio) {
 				processFuncArray.push((videoPaths, cb) => {
 					console.log('remove audio')
-					utils.removeAudioFromVideos(videoPaths, endVideoDuration, currentTimecode, (err, clearedPaths) => {
+					utils.removeAudioFromVideos(videoPaths, processFuncArray.length-1, endVideoDuration, currentTimecode, (err, clearedPaths) => {
 						utils.deleteFiles(videoPaths);
 						if (err) return cb(err);
 						return cb(null, clearedPaths);
