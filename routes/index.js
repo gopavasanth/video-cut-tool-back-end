@@ -162,6 +162,16 @@ function sendCallback (req, res) {
 					})
 				})
 			}
+			
+			processFuncArray.push((videoPaths, cb) => {
+				console.log('convert video to supported format(WebM)');
+				utils.convertVideoFormat(videoPaths, endVideoDuration, currentTimecode, (err, convertedPaths) => {
+					utils.deleteFiles(videoPaths);
+					if (err) return cb(err);
+					return cb(null, convertedPaths);
+				})
+			})
+
 			console.log('starting processing')
 
 			// With Async Waterfall method all the required operations will start

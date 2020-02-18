@@ -335,6 +335,56 @@ function removeAudioFromVideos(videosPaths, videoDuration, currentTimecode, call
 	})
 }
 
+function convertVideoFormat(videoPaths, videoDuration, currentTimecode, callback) {
+	const convertFunc = [];
+	const convertedLocations = [];
+	videoPaths.forEach((videoPath) => {
+		convertFunc.push((cb) => {
+			const videoExtension = videoPath.split('.').pop().toLowerCase();
+			if (!(['webm', 'ogv'].includes(videoExtension))) {
+				const convertedLocation = path.join(__dirname, `converted-video-${Date.now()}.webm`);
+				convertedLocations.push(convertedLocation);
+
+				const timeRegExp = new RegExp(/time=(\d{2}:\d{2}:\d{2}.\d{2})/);
+				const cmd = spawn('ffmpeg', ['-i', videoPath, '-c:v', 'libvpx-vp9', '-crf', '30', '-b:v', '0', '-b:a', '128k', '-c:a', 'libopus', convertedLocation]);
+
+				cmd.stderr.on('data', (data) => {
+					const decodedData = new Buffer.from(data, 'base64').toString('utf8');
+
+					if (timeRegExp.test(decodedData)) {
+						let time = convertTimeToMs(decodedData.match(timeRegExp)[1].split(':'));
+						updateProgressEmit(time + currentTimecode, videoDuration, 'converting video format');
+					}
+				});
+				cmd.on('error', (err) => {console.log('err',err);cb(err);})
+				cmd.on('close', (code) => {
+					if (code === 0) {
+						console.log("Converting video format success");
+						return cb();
+					}
+					console.log("Something happened with converting video format");
+					return cb(code);
+				});
+			} else {
+				console.log("video is already in supported format: ", videoExtension, ', skipping...');
+				const convertedLocation = path.join(__dirname, `converted-video-${Date.now()}.${videoExtension}`);
+				fs.rename(videoPath, convertedLocation, function (err) {
+					if (err) {
+						return cb(err.code);
+					}
+					convertedLocations.push(convertedLocation);
+					return cb();
+				});
+			}
+		});
+	});
+	async.series(convertFunc, (err) => {
+		if (err) return callback(err);
+		console.log('converted paths: ')
+		return callback(null, convertedLocations);
+	});
+}
+
 module.exports = {
     move,
     moveVideosToPublic,
@@ -345,5 +395,6 @@ module.exports = {
     rotateVideos,
     concatVideos,
 	trimVideos,
+	convertVideoFormat,
 	updateProgressEmit,
 }
