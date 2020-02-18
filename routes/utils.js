@@ -94,7 +94,9 @@ function downloadVideo(url, name, callback) {
 		console.log("downloading success")
 
 		const durationRegExp = new RegExp(/Duration: (\d{2}:\d{2}:\d{2}.\d{2})/);
-		let videoDuration = convertTimeToMs(stdout.match(durationRegExp)[1].split(':'));
+		let videoDuration = stderr.length === 0
+			? convertTimeToMs(stdout.match(durationRegExp)[1].split(':'))
+			: convertTimeToMs(stderr.match(durationRegExp)[1].split(':'));
 
 		return callback(null, videoDownloadPath, videoDuration);
 	})
@@ -126,11 +128,12 @@ function trimVideos(videoPath, taskNum, trims, mode, callback) {
 		trimFuncArray.push((callback) => {
 			const videoLocation = path.join(__dirname, `trimmed-video-${Date.now()}.${videoExtension}`);
 			trimsLocations.push(videoLocation);
-			const cmd = spawn('ffmpeg', ['-i', videoPath, '-ss', element.from, '-to', element.to, '-async', 1, '-strict', 2, videoLocation]);
+			const cmd = spawn('ffmpeg', ['-i', videoPath, '-ss', element.from, '-to', element.to, '-async', 1, '-strict', 2, videoLocation, '-loglevel', 'info']);
 			const timeRegExp = new RegExp(/time=(\d{2}:\d{2}:\d{2}.\d{2})/);
 
 			cmd.stderr.on('data', (data) => {
 				const decodedData = new Buffer.from(data, 'base64').toString('utf8');
+				console.log(decodedData);
 				if (timeRegExp.test(decodedData)) {
 					if (trims.length === 1 || trims.length > 1 && index === 0) {
 						time = convertTimeToMs(decodedData.match(timeRegExp)[1].split(':'));
@@ -167,14 +170,14 @@ function concatVideos(videoPaths, videoDuration, currentTimecode, callback) {
 	})
 
 	const concatedLocation = path.join(__dirname, `concated-video-${Date.now()}.${videoPaths[0].split('.').pop()}`);
-	const cmd = spawn('ffmpeg', ['-f', 'concat', '-safe', 0, '-i', videosListFileName, '-c', 'copy', concatedLocation]);
+	const cmd = spawn('ffmpeg', ['-f', 'concat', '-safe', 0, '-i', videosListFileName, '-c', 'copy', concatedLocation, '-loglevel', 'info']);
 	
 	const timeRegExp = new RegExp(/time=(\d{2}:\d{2}:\d{2}.\d{2})/);
 	let newCurrentTimecode = 0;
 
 	cmd.stderr.on('data', (data) => {
 		const decodedData = new Buffer.from(data, 'base64').toString('utf8');
-
+		console.log(decodedData);
 		if (timeRegExp.test(decodedData)) {
 			let time = convertTimeToMs(decodedData.match(timeRegExp)[1].split(':'));
 			newCurrentTimecode = time + currentTimecode;
@@ -205,10 +208,10 @@ function rotateVideos(videosPaths, videoDuration, currentTimecode, RotateValue, 
 			rotatesLocations.push(rotatedLocation);
 
 			let commandArguments = [
-				['-i', videoPath, '-vf', 'transpose=1', rotatedLocation],
-				['-i', videoPath, '-vf', 'transpose=2,transpose=2', rotatedLocation],
-				['-i', videoPath, '-vf', `transpose=${RotateValue}`, rotatedLocation],
-				['-i', videoPath, '-vf', 'transpose=4', rotatedLocation]
+				['-i', videoPath, '-vf', 'transpose=1', rotatedLocation, '-loglevel', 'info'],
+				['-i', videoPath, '-vf', 'transpose=2,transpose=2', rotatedLocation, '-loglevel', 'info'],
+				['-i', videoPath, '-vf', `transpose=${RotateValue}`, rotatedLocation, '-loglevel', 'info'],
+				['-i', videoPath, '-vf', 'transpose=4', rotatedLocation, '-loglevel', 'info']
 			];
 			let cmd;
 
@@ -231,7 +234,7 @@ function rotateVideos(videosPaths, videoDuration, currentTimecode, RotateValue, 
 
 			cmd.stderr.on('data', (data) => {
 				const decodedData = new Buffer.from(data, 'base64').toString('utf8');
-
+				console.log(decodedData);
 				if (timeRegExp.test(decodedData)) {
 					let time = convertTimeToMs(decodedData.match(timeRegExp)[1].split(':'));
 					newCurrentTimecode = time + currentTimecode;
@@ -266,13 +269,13 @@ function cropVideos(videosPaths, videoDuration, currentTimecode, out_width, out_
 			const croppedLocation = path.join(__dirname, `cropped-video-${Date.now()}.${videoExtension}`);
 			cropsLocations.push(croppedLocation);
 
-			const cmd = spawn('ffmpeg', ['-i', videoPath, '-filter:v', `crop=${out_width / 100}*in_w:${out_height / 100}*in_h:${x_value / 100}*in_w:${y_value / 100}*in_h`, '-c:a', 'copy', croppedLocation]);
+			const cmd = spawn('ffmpeg', ['-i', videoPath, '-filter:v', `crop=${out_width / 100}*in_w:${out_height / 100}*in_h:${x_value / 100}*in_w:${y_value / 100}*in_h`, '-c:a', 'copy', croppedLocation, '-loglevel', 'info']);
 
 			const timeRegExp = new RegExp(/time=(\d{2}:\d{2}:\d{2}.\d{2})/);
 
 			cmd.stderr.on('data', (data) => {
 				const decodedData = new Buffer.from(data, 'base64').toString('utf8');
-
+				console.log(decodedData)
 				if (timeRegExp.test(decodedData)) {
 					let time = convertTimeToMs(decodedData.match(timeRegExp)[1].split(':'));
 					newCurrentTimecode = time + currentTimecode;
@@ -306,13 +309,13 @@ function removeAudioFromVideos(videosPaths, videoDuration, currentTimecode, call
 			const clearedLocation = path.join(__dirname, `cleared-video-${Date.now()}.${videoExtension}`);
 			clearedLocations.push(clearedLocation);
 
-			const cmd = spawn('ffmpeg', ['-i', videoPath, '-an', clearedLocation]);
+			const cmd = spawn('ffmpeg', ['-i', videoPath, '-an', clearedLocation, '-loglevel', 'info']);
 
 			const timeRegExp = new RegExp(/time=(\d{2}:\d{2}:\d{2}.\d{2})/);
 
 			cmd.stderr.on('data', (data) => {
 				const decodedData = new Buffer.from(data, 'base64').toString('utf8');
-
+				console.log(decodedData)
 				if (timeRegExp.test(decodedData)) {
 					let time = convertTimeToMs(decodedData.match(timeRegExp)[1].split(':'));
 					updateProgressEmit(time + currentTimecode, videoDuration, 'losing audio');
