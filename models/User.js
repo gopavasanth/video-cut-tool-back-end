@@ -5,6 +5,7 @@ const UserSchema = new Schema({
   id: String,
   username: String,
   mediawikiId: String,
+  socketId: String,
   mediawikiToken: { type: String, select: false },
   mediawikiTokenSecret: { type: String, select: false }
 })

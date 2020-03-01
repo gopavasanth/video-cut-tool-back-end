@@ -1,6 +1,7 @@
 const express = require('express');
 const path = require('path');
 const logger = require('morgan');
+const mongoose = require('mongoose');
 const cookieParser = require('cookie-parser');
 const bodyParser = require('body-parser');
 const cors = require('cors'); // addition we make
@@ -14,6 +15,9 @@ var passport = require( "passport" ),
     MediaWikiStrategy = require( "passport-mediawiki-oauth" ).OAuthStrategy,
     session = require( "express-session" );
 
+mongoose.connect(config.DB_CONNECTION_URL)
+const UserModel = require('./models/User');
+const VideoModel = require('./models/Video');
 // view engine setup
 app.set('views', __dirname + '/views');
 app.set('view engine', 'ejs');

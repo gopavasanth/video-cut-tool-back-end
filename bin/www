@@ -27,11 +27,7 @@ server.setTimeout(0);
  * Create socket.io server
  */
 
-const io = require('socket.io')(server, { path: '/video-cut-tool-back-end/socket.io' });
-eventEmitter.on('progress:update', data => {
-  // console.log(data);
-  io.emit('progress:update', data);
-});
+const io = require('../websockets')(server, { path: '/video-cut-tool-back-end/socket.io' });
 
 /**
  * Listen on provided port, on all network interfaces.
