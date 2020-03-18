@@ -4,7 +4,8 @@
   "private": true,
   "scripts": {
     "start": "node ./bin/www",
-    "start:prod": "pm2 start ./bin/www"
+    "start:prod": "pm2 start --name app-server ./bin/www",
+    "stop:prod": "pm2 stop app-server"
   },
   "dependencies": {
     "async": "^3.0.1",
