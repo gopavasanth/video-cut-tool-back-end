@@ -172,7 +172,7 @@ module.exports = {
             }
             req.body.inputVideoUrl = req.files.video.tempFilePath
             req.body.videoName = req.files.video.name
-            utils.moveVideosToPublic([req.body.inputVideoUrl], (err, results) => {
+            utils.moveVideosToPublic([{path: req.body.inputVideoUrl, name: req.body.videoName}], (err, results) => {
                 if (err) {
                     console.log(err);
                     return res.status(400).send('Something went wrong');
