@@ -177,7 +177,7 @@ module.exports = {
                     console.log(err);
                     return res.status(400).send('Something went wrong');
                 }
-                req.body.inputVideoUrl = results[0];
+                req.body.inputVideoUrl = `https://videocuttool.wmflabs.org/video-cut-tool-back-end/public/${results[0].split('public/').pop()}`;
                 module.exports.sendCallback(req, res)
             })
         } else {
