@@ -178,7 +178,7 @@ module.exports = {
                     return res.status(400).send('Something went wrong');
                 }
                 req.body.inputVideoUrl = results[0];
-                sendCallback(req, res)
+                this.sendCallback(req, res)
             })
         } else {
             return res.status(400).send('There was no video specified.')
