@@ -38,3 +38,6 @@ routes/rotate/
 #any downloaded videos
 *.webm
 *.mp4
+
+#config_file
+config.js
