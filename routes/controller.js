@@ -130,28 +130,49 @@ module.exports = {
                 })
         }
         else {
-            let responses = []
-            publicVideos.map(video => {
-                // This modules supports to upload the result of the operations to the Commons
-                wikiUpload.uploadFileToMediawiki(
-                    user.mediawikiToken,
-                    user.mediawikiTokenSecret,
-                    fs.createReadStream(video.path),
-                    {
-                        filename: video.title,
-                        text: video.text,
-                        comment: video.comment
-                    },
-                    (err, response) => {
-                        if (err) {
-                            console.log(err);
-                            return res.status(400).send('Something went wrong while uploading the video')
-                        }
-                        responses.push(response);
+            let responses = [];
+            UserModel
+            .findOne({ mediawikiId: user.mediawikiId })
+            .select('+mediawikiToken +mediawikiTokenSecret')
+            .then((userData) => {
+                if (!userData) throw new Error('Invalid user mediawiki id');
+                const uploadFileArray = [];
+
+                publicVideos.forEach(video => {
+                    uploadFileArray.push((cb) => {
+                        // This modules supports to upload the result of the operations to the Commons
+                        wikiUpload.uploadFileToMediawiki(
+                            userData.mediawikiToken,
+                            userData.mediawikiTokenSecret,
+                            fs.createReadStream(video.path),
+                            {
+                                filename: video.title,
+                                text: video.text,
+                                comment: video.comment
+                            },
+                            (err, response) => {
+                                if (err) {
+                                    console.log(err);
+                                    return cb(err);
+                                }
+                                responses.push(response);
+                                cb()
+                            }
+                        )
+                    })
+                });
+                async.series(uploadFileArray, (err, result) => {
+                    if (err) {
+                        console.log(err);
+                        return res.status(400).send('Something went wrong while uploading video');
                     }
-                )
-            });
-            res.send(responses);
+                    res.send(responses);
+                })
+            })
+            .catch(err => {
+                console.log(err);
+                return res.status(400).send('Something when wrong while uploading');
+            })
         }
     },
 
