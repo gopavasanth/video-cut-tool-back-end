@@ -2,7 +2,7 @@ const request = require('request')
 const OAuth = require('oauth-1.0a')
 const crypto = require('crypto')
 var config = require('../config');
-const { updateProgressEmit } = require('../routes/utils');
+// const { updateProgressEmit } = require('../routes/utils');
 
 const oauth = OAuth({
   consumer: {
@@ -34,7 +34,7 @@ function uploadFileToMediawiki(key, secret, file, options, callback) {
       url: `${BASE_URL}?action=query&meta=tokens&type=csrf&format=json`,
       method: 'POST',
     }
-    updateProgressEmit(0, 100, 'uploading to Wikimedia Commons');
+    // updateProgressEmit(0, 100, 'uploading to Wikimedia Commons');
     request({
       url: requestData.url,
       method: requestData.method,
@@ -58,7 +58,7 @@ function uploadFileToMediawiki(key, secret, file, options, callback) {
         },
       }
       // perform upload
-      updateProgressEmit(50, 100, 'uploading to Wikimedia Commons');
+      // updateProgressEmit(50, 100, 'uploading to Wikimedia Commons');
       request({
         url: requestData.url,
         method: requestData.method,
@@ -73,7 +73,7 @@ function uploadFileToMediawiki(key, secret, file, options, callback) {
         }
 
         if (parsedBody.upload && parsedBody.upload.result.toLowerCase() === 'success') {
-          updateProgressEmit(100, 100, 'uploading to Wikimedia Commons');
+          // updateProgressEmit(100, 100, 'uploading to Wikimedia Commons');
           resolve(parsedBody.upload)
           return callback(null, parsedBody.upload)
         } else {
