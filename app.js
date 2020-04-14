@@ -26,8 +26,8 @@ app.use('/public', express.static(path.join(__dirname, 'public')));
 app.use('/video-cut-tool-back-end/public', express.static(path.join(__dirname, 'public')));
 
 app.use(logger('dev'));
-app.use(bodyParser.json());
-app.use(bodyParser.urlencoded({ extended: true }));
+app.use(bodyParser.json({ limit: '500mb' }));
+app.use(bodyParser.urlencoded({ limit: '500mb', extended: true }));
 app.use(cookieParser());
 
 // Use CORS and File Upload modules here
