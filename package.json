@@ -3,6 +3,7 @@
   "version": "0.0.1",
   "private": true,
   "scripts": {
+    "test": "eslint . --ext .js,.ts",
     "start": "node ./bin/www",
     "start:prod": "pm2 start --name app-server ./bin/www",
     "stop:prod": "pm2 stop app-server"
@@ -32,5 +33,10 @@
     "serve-favicon": "^2.5.0",
     "session": "^0.1.0",
     "socket.io": "^2.3.0"
+  },
+  "devDependencies": {
+    "eslint": "^7.22.0",
+    "eslint-config-airbnb-base": "^14.2.1",
+    "eslint-plugin-import": "^2.22.1"
   }
 }

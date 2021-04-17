@@ -37,17 +37,17 @@ function moveVideosToPublic(videoPaths, callback) {
 	const newPaths = [];
 	const currentDate = Date.now();
 	videoPaths.forEach((video, index) => {
-		moveFuncArray.push((cb) => {
+		moveFuncArray.push(cb => {
 			const videoName = `${currentDate}-${index}.${video.name.split('.').pop()}`;
 			const newPath = path.join(__dirname, '../', 'public', `publicVideo-${videoName}`);
 			newPaths.push(newPath);
-			move(path.join(__dirname, video.path), newPath, (err) => {
+			move(path.join(__dirname, video.path), newPath, err => {
 				if (err) return cb(err);
 				return cb();
 			})
 		})
 	});
-	async.parallel(moveFuncArray, (err) => {
+	async.parallel(moveFuncArray, err => {
 		if (err) return callback(err);
 		return callback(null, newPaths);
 	})
@@ -56,6 +56,6 @@ function moveVideosToPublic(videoPaths, callback) {
 
 module.exports = {
 	move,
-	moveVideosToPublic,
+	moveVideosToPublic
 	// deleteFiles,
 }
