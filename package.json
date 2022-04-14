@@ -9,7 +9,7 @@
     "stop:prod": "pm2 stop app-server"
   },
   "dependencies": {
-    "async": "^3.0.1",
+    "async": "^3.2.2",
     "async-series": "0.0.1",
     "axios": "^0.19.0",
     "bull": "^3.13.0",
